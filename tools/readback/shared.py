@@ -16,10 +16,10 @@ def read(path):
     with os.fdopen(fd, 'r', encoding='utf-8-sig') as f:
         return f.read()
 
-def gate(path, clock=None):
+def gate(path, clock=None, require_cleared=True):
     state = json.loads(read(path))
     age = (time.time() if clock is None else clock) - state['unix']
-    if not state.get('ok') or state.get('pending') or not 0 <= age <= 2:
+    if not state.get('ok') or (require_cleared and state.get('pending')) or not 0 <= age <= 2:
         raise RuntimeError('supervisor stopped, pending owner activity or heartbeat stale')
     return state
 
@@ -33,7 +33,8 @@ def progress(text, session, previous=-1, clock=None):
             raise RuntimeError('non-monotonic game readback')
     row = rows[-1]
     age = (time.time() if clock is None else clock) - row['unixMs'] / 1000
-    if row['session'] != session or row['sequence'] < previous or not 0 <= age <= 3:
+    freshness = 90 if row['phase'] == 'starting' else 3
+    if row['session'] != session or row['sequence'] < previous or not 0 <= age <= freshness:
         raise RuntimeError('wrong session, replay or stale game readback')
     if not row['neutralInput'] or not row['forceMuted'] or row['deviceInput'] or row['network']:
         raise RuntimeError('game isolation witness refused')

@@ -13,17 +13,18 @@ foreach($pair in @(@($job,'725E52B00A36B8189BF4BAF3CF201D1266614B49DB124F2C41088
 if(git -C $root status --porcelain --untracked-files=no){throw 'Clean tracked source required'}
 $commit=(git -C $root rev-parse HEAD).Trim()
 $receipt=Get-Content "$root/build/readback-build.json" -Raw|ConvertFrom-Json
-if($receipt.source -cne $commit -or $receipt.candidate -cne (Get-FileHash $candidate).Hash){throw 'Build receipt does not match clean source/candidate'}
+git -C $root diff --quiet $receipt.source HEAD -- CMakeLists.txt src cmake
+if($LASTEXITCODE -or $receipt.candidate -cne (Get-FileHash $candidate).Hash){throw 'Build receipt does not match compiled source/candidate'}
 [void](New-Item -ItemType Directory $out)
 # Read-only use of the installed ROM; no owner assets are written or copied back.
 $rom=Join-Path $owner 'roms/daytona93.zip'
 $roots=@($owner,(Join-Path ([Environment]::GetFolderPath('ApplicationData')) 'daytona-recomp/daytona93'))
 $roots|ConvertTo-Json|Set-Content "$out/owner-roots.json" -Encoding utf8NoBOM
-$pins=@(foreach($p in @($candidate,$rom,$capture,$job,$observer,$python,"$out/owner-roots.json")+(Get-ChildItem $PSScriptRoot -File|ForEach-Object FullName)){
- @{path=[IO.Path]::GetFullPath($p);sha256=(Get-FileHash -LiteralPath $p -Algorithm SHA256).Hash}
-})
-$plan=@{source=$commit;attemptRoot=$out;session=[Guid]::NewGuid().ToString('N');candidate=$candidate;rom=$rom;capture=$capture;job=$job;observer=$observer;python=$python;pins=$pins;frames=1800}
-$plan|ConvertTo-Json -Depth 6|Set-Content "$out/prepared.json" -Encoding utf8NoBOM
 & $python -B "$PSScriptRoot/owner.py" snapshot "$out/owner-roots.json" "$out/owner-preflight.json"
 if($LASTEXITCODE){throw 'Owner preflight failed'}
+$pins=@(foreach($p in @($candidate,$rom,$capture,$job,$observer,$python,"$out/owner-roots.json","$out/owner-preflight.json")+(Get-ChildItem $PSScriptRoot -File|ForEach-Object FullName)){
+ @{path=[IO.Path]::GetFullPath($p);sha256=(Get-FileHash -LiteralPath $p -Algorithm SHA256).Hash}
+})
+$plan=@{source=$receipt.source;runnerSource=$commit;attemptRoot=$out;session=[Guid]::NewGuid().ToString('N');candidate=$candidate;rom=$rom;capture=$capture;job=$job;observer=$observer;python=$python;pins=$pins;frames=1800}
+$plan|ConvertTo-Json -Depth 6|Set-Content "$out/prepared.json" -Encoding utf8NoBOM
 Get-FileHash "$out/prepared.json"

@@ -4,9 +4,17 @@ using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
 
-// Same native whole-object rename contract as windows/host/control_publish.hpp.
+// Qualified native whole-object rename contract, shared-delete readers required.
 // Private supervisor snapshots only; caller owns and has closed the complete temporary file.
 public static class DaytonaSnapshot {
+    [DllImport("user32", CharSet=CharSet.Unicode)] static extern int GetClassName(IntPtr h,StringBuilder name,int size);
+    [DllImport("user32")] static extern uint GetWindowThreadProcessId(IntPtr h,out uint pid);
+    [DllImport("user32")] static extern bool IsWindowVisible(IntPtr h);
+    public static bool GameWindow(IntPtr h,int pid) {
+        uint actual;GetWindowThreadProcessId(h,out actual);
+        var name=new StringBuilder(256);GetClassName(h,name,name.Capacity);
+        return actual==(uint)pid && IsWindowVisible(h) && name.ToString()=="SDL_app";
+    }
     [StructLayout(LayoutKind.Sequential)]
     struct Rename { public uint Flags; public IntPtr RootDirectory; public uint FileNameLength; public ushort FileName; }
     [DllImport("kernel32", CharSet=CharSet.Unicode, SetLastError=true)]

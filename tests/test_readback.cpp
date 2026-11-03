@@ -37,6 +37,7 @@ int main() {
     check(app::Readback::budget("3600") == 3600);
     for (auto bad : {"", "0", "599", "3601", "1800x", "-1", "1.5", "999999999999999999"}) refuses([&] { app::Readback::budget(bad); });
     app::Readback inactive; inactive.validate(false); check(!inactive);
+    inactive.requested = true; refuses([&] { inactive.validate(true); });
     app::Readback bad; bad.dir = "."; bad.session = std::string(32, 'a'); bad.frames = 1800;
     refuses([&] { bad.validate(false); }); refuses([&] { bad.validate(true); });
     bad.dir = std::filesystem::absolute("readback-test-state").string(); bad.session = "invalid";
@@ -45,9 +46,14 @@ int main() {
     check(std::filesystem::create_directory(bad.dir));
     bad.session = std::string(32, 'a'); bad.validate(true);
     bad.write("running", 600, 620, true); bad.log.close();
+    check(!bad.cleanup_ack());
+    { std::ofstream f(bad.dir + "cleanup.ok"); f << std::string(32, 'b'); } check(!bad.cleanup_ack());
+    { std::ofstream f(bad.dir + "cleanup.ok"); f << bad.session; } check(bad.cleanup_ack());
+    { std::ofstream f(bad.dir + "cleanup.ok"); f << bad.session << 'x'; } check(!bad.cleanup_ack());
     check(std::filesystem::file_size(std::filesystem::path(bad.dir) / "readback.jsonl") > 100);
     app::Readback duplicate; duplicate.dir = bad.dir; duplicate.session = bad.session; duplicate.frames = 1800;
     refuses([&] { duplicate.validate(true); });
-    std::filesystem::remove(std::filesystem::path(bad.dir) / "readback.jsonl"); std::filesystem::remove(bad.dir);
+    std::filesystem::remove(std::filesystem::path(bad.dir) / "readback.jsonl");
+    std::filesystem::remove(std::filesystem::path(bad.dir) / "cleanup.ok"); std::filesystem::remove(bad.dir);
     std::printf("readback: %u assertions passed; fake SDL calls blocked while muted\n", assertions);
 }

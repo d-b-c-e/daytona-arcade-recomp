@@ -26,7 +26,7 @@ function CloseOwnedGame {
  try{$now=[TruckfulLive]::ProcessIdentity($identity.pid)}catch{if(Get-Process -Id $identity.pid -ErrorAction SilentlyContinue){throw};return}
  if($now.birth -ne $identity.birth -or $now.image -ine $identity.image){throw 'Owned game identity became ambiguous'}
  $p=Get-Process -Id $identity.pid
- if($p.MainWindowHandle -ne 0){[void][TruckfulLive]::PostMessage($p.MainWindowHandle,0x10,[IntPtr]::Zero,[IntPtr]::Zero)}
+ if($p.MainWindowHandle -ne 0 -and [DaytonaSnapshot]::GameWindow($p.MainWindowHandle,$identity.pid)){[void][TruckfulLive]::PostMessage($p.MainWindowHandle,0x10,[IntPtr]::Zero,[IntPtr]::Zero)}
 }
 try {
  Add-Type -Path $plan.job;Add-Type -Path $plan.observer;Add-Type -Path "$PSScriptRoot/Snapshot.cs"

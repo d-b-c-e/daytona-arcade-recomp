@@ -29,7 +29,11 @@ R1: the graphical app flushes an append-only session/frame/present/isolation log
 every 30 guest frames. This is the same graphical `GameLoop::run_frame` path;
 frame counters alone do not prove rendered content. At 1800 frames it publishes
 `closing` and waits up to 15 seconds for the private cleanup handshake before
-removing its window. The parent enters cleanup before acknowledging that file.
+removing its window. The parent enters cleanup before acknowledging that file;
+the bounded acknowledgment must contain the exact session nonce. Startup records
+have a 90-second bound; running progress expires after three seconds. Submitted
+present counts require successful SDL GPU submission. ImGui is explicitly set
+to manual empty gamepads before any frame.
 
 R2: after frames 600 and 1200, the worker uses the pinned window enumerator to
 select the sole exact `SDL_app`/`Daytona USA` window for its owned PID. Each burst

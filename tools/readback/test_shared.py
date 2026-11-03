@@ -12,11 +12,15 @@ class Admission(unittest.TestCase):
                 if accepted: self.assertTrue(gate(p,100)['ok'])
                 else:
                     with self.assertRaises(RuntimeError): gate(p,100)
+            p.write_text(json.dumps(dict(unix=100,ok=True,pending=True)))
+            self.assertTrue(gate(p,100,require_cleared=False)['pending'])
     def test_readback(self):
         row=dict(session='a'*32,sequence=1,unixMs=100000,phase='running',frames=600,presents=610,
             neutralInput=True,forceMuted=True,deviceInput=False,network=False,hardware=True)
         def text(r): return json.dumps(r)+'\n'
         self.assertEqual(progress(text(row)+'{"partial":',row['session'],clock=100)['frames'],600)
+        self.assertEqual(progress(text(dict(row,phase='starting',frames=0)),row['session'],clock=180)['frames'],0)
+        with self.assertRaises(RuntimeError): progress(text(dict(row,phase='starting',frames=0)),row['session'],clock=191)
         for key, value in [('session','b'*32),('unixMs',96000),('neutralInput',False),('forceMuted',False),('deviceInput',True),('network',True)]:
             with self.assertRaises(RuntimeError): progress(text(dict(row,**{key:value})),row['session'],clock=100)
         with self.assertRaises(RuntimeError): progress(text(row),row['session'],previous=2,clock=100)

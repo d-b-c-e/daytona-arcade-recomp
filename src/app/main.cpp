@@ -179,13 +179,14 @@ int main(int argc, char **argv) {
         for (int i = 1; i < argc; ++i) {
             const std::string arg = argv[i];
             if (arg == "--readback-state" || arg == "--readback-session") {
+                readback.requested = true;
                 if (i + 1 == argc) throw std::runtime_error("missing readback value");
                 auto &value = arg == "--readback-state" ? readback.dir : readback.session;
                 if (!value.empty()) throw std::runtime_error("duplicate readback option");
                 value = argv[++i];
             }
         }
-        if (readback || !readback.session.empty()) {
+        if (readback.requested) {
             for (int i = 1; i + 1 < argc; ++i)
                 if (!std::strcmp(argv[i], "--frames")) readback.frames = app::Readback::budget(argv[++i]);
             readback.validate(environment_mute);
@@ -268,6 +269,7 @@ int main(int argc, char **argv) {
     ImGui::StyleColorsDark();
     ImGui::GetStyle().ScaleAllSizes(SDL_GetWindowDisplayScale(window));
     ImGui_ImplSDL3_InitForSDLGPU(window);
+    if (readback) ImGui_ImplSDL3_SetGamepadMode(ImGui_ImplSDL3_GamepadMode_Manual, nullptr, 0);
     ImGui_ImplSDLGPU3_InitInfo ii;
     ii.Device = dev;
     ii.ColorTargetFormat = SDL_GetGPUSwapchainTextureFormat(dev, window);
@@ -576,8 +578,9 @@ int main(int argc, char **argv) {
                 SDL_EndGPURenderPass(pass);
             }
         }
-        SDL_SubmitGPUCommandBuffer(cmd);
-        if (swap) ++presents;
+        const bool submitted = SDL_SubmitGPUCommandBuffer(cmd);
+        if (readback && !submitted) return fail("readback GPU submit");
+        if (swap && submitted) ++presents;
         if (readback && game && game->frames() >= reported_frame + 30) {
             reported_frame = game->frames();
             readback.write("running", game->frames(), presents, cfg.renderer == "hardware" && gpu.ok());
@@ -588,8 +591,8 @@ int main(int argc, char **argv) {
         readback.write("closing", game ? game->frames() : 0, presents, gpu.ok());
         // Parent moves its foreground guard into cleanup before the game window disappears.
         const auto deadline = SDL_GetTicks() + 15000;
-        while (!std::filesystem::exists(readback.dir + "cleanup.ok") && SDL_GetTicks() < deadline) SDL_Delay(20);
-        if (!std::filesystem::exists(readback.dir + "cleanup.ok")) return fail("readback cleanup handshake timed out");
+        while (!readback.cleanup_ack() && SDL_GetTicks() < deadline) SDL_Delay(20);
+        if (!readback.cleanup_ack()) return fail("readback cleanup handshake timed out");
     }
 
     save_nv();

@@ -15,6 +15,7 @@ struct Readback {
     unsigned frames = 0;
     std::ofstream log;
     unsigned sequence = 0;
+    bool requested = false;
     explicit operator bool() const { return !dir.empty(); }
     static unsigned budget(std::string_view value) {
         unsigned n = 0;
@@ -24,7 +25,7 @@ struct Readback {
         return n;
     }
     void validate(bool environment_mute) {
-        if (!*this && session.empty()) return;
+        if (!requested && !*this && session.empty()) return;
         if (!*this || !environment_mute || session.size() != 32 ||
             !std::all_of(session.begin(), session.end(), [](char c) { return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'); }))
             throw std::runtime_error("readback requires a private absolute directory, 32 lowercase hex session and DBCE_FFB_MUTE=1");
@@ -36,6 +37,12 @@ struct Readback {
         dir = p.generic_string() + "/";
         log.open(p / "readback.jsonl", std::ios::out | std::ios::binary);
         if (!log) throw std::runtime_error("cannot create private readback log");
+    }
+    bool cleanup_ack() const {
+        char value[33]{};
+        std::ifstream f(dir + "cleanup.ok", std::ios::binary);
+        f.read(value, sizeof value);
+        return f.gcount() == 32 && std::string_view(value, 32) == session;
     }
     void write(const char *phase, uint64_t frame, uint64_t presents, bool hardware) {
         if (!*this) return;

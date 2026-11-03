@@ -10,10 +10,25 @@ flushed session/frame/present records and two planned exact-window capture burst
 See [the runner](tools/readback/README.md) for commands, bounds, owner protection,
 actual job/low-level observer dependencies and remaining evidence gates.
 
-Current state: implementation and inert tests prepared; no build, fixture run,
-game, hook, lease, installed-file write or public push in this increment. Next:
-one coordinated CPU configure/build/rehearsal slot, pin clean candidate, prepare
-fresh manifest, then one coordinated R1/R2 neutral-attract run. Existing adoption
+CPU GO502841 built source `6d4f982` successfully: candidate
+`D6ABB26243A107AA3B07FA09014DB2FC56911ACF092FE1CD896FD9FCBCBB6C2B`,
+21 production fake-SDL/private-state assertions, three production reader/owner
+tests, and 1001 native snapshot replacements with 36753 shared reads and zero
+errors. Suspended root job emptied/released; CPU lease
+`bc4271b8741645eea94b3307e2b20de5` released. Evidence:
+`build/readback-go502841.log`, `build/readback/rehearsal-go502841/`.
+
+Pre-live audit then tightened empty supplied-option rejection, bounded nonce
+cleanup acknowledgment, explicit ImGui no-gamepad mode and GPU-submit success
+counting. Running readback stays stale after three seconds; initial starting
+allows at most 90 seconds. Pending startup raw resets hold capture admission
+until the existing observer resolves them, without inventing a new abort policy.
+Normal close also checks native SDL window class/owner/visibility. Preparation
+pins the baseline itself, and records compiled-source and runner-source commits
+separately so documentation updates do not invalidate unchanged binary identity.
+These corrections require the focused incremental build/rehearsal before live use.
+No game, hook, capture, input, owner/installed write or public push has occurred.
+Next: incremental CPU check, fresh pinned manifest, then one R1/R2 GO. Existing adoption
 rows STD-001–010 remain unchecked; only touched STD-035 scope is marked partial.
 
 Important findings: SDL_GetPrefPath uses the real Windows preference location;
