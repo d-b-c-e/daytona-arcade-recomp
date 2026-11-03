@@ -1,9 +1,42 @@
 """Production readers/admission, no game, SDL, device enumeration, input or hooks."""
 import json, pathlib, sys, tempfile, time, unittest
+import ctypes, ctypes.wintypes as wt, msvcrt
 from shared import gate, progress, read
 from owner import snapshot
+from analyze_controls import analyze
 
 class Admission(unittest.TestCase):
+    def test_trace_correlation_refusals(self):
+        # Protocol fixtures only; native guest-consumption evidence still needs the live run.
+        with tempfile.TemporaryDirectory(dir=pathlib.Path.cwd()) as tmp:
+            root=pathlib.Path(tmp);program=root/'program';program.write_text('frames 3\n')
+            path=root/'trace';session='a'*32
+            rows=[dict(session=session,frame=f,offered=[128,32,32,255,175],source='Controls::sample(private-keys)',
+                revoked=False,readCounts=[f]*5,readFrames=[f]*5,guestValues=[128,32,32,255,175],
+                cacheAdc=[128,32,32],cacheAverage=[32768,8192,8192],gameMode=[1,1]) for f in range(1,4)]
+            def write(data):path.write_text(''.join(json.dumps(r)+'\n' for r in data))
+            write(rows);self.assertEqual(analyze(path,session,3,program)['result'],'pass')
+            for key,value in [('session','b'*32),('frame',1),('revoked',True),('source','other'),
+                ('readFrames',[4]*5),('guestValues',[0]*5),('readCounts',[0]*5)]:
+                bad=json.loads(json.dumps(rows));bad[1][key]=value;write(bad)
+                with self.assertRaises(RuntimeError):analyze(path,session,3,program)
+    def test_hidden_and_sparse(self):
+        with tempfile.TemporaryDirectory(dir=pathlib.Path.cwd()) as tmp:
+            root=pathlib.Path(tmp); hidden=root/'hidden.dat';hidden.write_bytes(b'owned-fixture')
+            kernel=ctypes.WinDLL('kernel32',use_last_error=True)
+            kernel.SetFileAttributesW.argtypes=[wt.LPCWSTR,wt.DWORD]
+            flags=hidden.stat().st_file_attributes
+            self.assertTrue(kernel.SetFileAttributesW(str(hidden),flags|2))
+            first=snapshot([tmp]);self.assertTrue(first[tmp]['files']['hidden.dat']['attributes']&2)
+            hidden.write_bytes(b'changed');self.assertNotEqual(snapshot([tmp]),first)
+            sparse=root/'sparse.bin';sparse.write_bytes(b'')
+            kernel.DeviceIoControl.argtypes=[wt.HANDLE,wt.DWORD,wt.LPVOID,wt.DWORD,wt.LPVOID,wt.DWORD,ctypes.POINTER(wt.DWORD),wt.LPVOID]
+            with sparse.open('r+b') as f:
+                enabled=ctypes.c_ubyte(1);used=wt.DWORD()
+                self.assertTrue(kernel.DeviceIoControl(wt.HANDLE(msvcrt.get_osfhandle(f.fileno())),0x900c4,
+                    ctypes.byref(enabled),1,None,0,ctypes.byref(used),None))
+            self.assertTrue(sparse.stat().st_file_attributes&0x200)
+            with self.assertRaises(ValueError):snapshot([tmp])
     def test_guard(self):
         with tempfile.TemporaryDirectory(dir=pathlib.Path.cwd()) as tmp:
             p = pathlib.Path(tmp) / 'guard.json'
@@ -19,6 +52,10 @@ class Admission(unittest.TestCase):
             neutralInput=True,forceMuted=True,deviceInput=False,network=False,hardware=True)
         def text(r): return json.dumps(r)+'\n'
         self.assertEqual(progress(text(row)+'{"partial":',row['session'],clock=100)['frames'],600)
+        scripted=dict(row,neutralInput=False,scriptedInput=True,inputSource='private-key-array')
+        self.assertFalse(progress(text(scripted),row['session'],clock=100,controls=True)['neutralInput'])
+        with self.assertRaises(RuntimeError):progress(text(scripted),row['session'],clock=100)
+        with self.assertRaises(RuntimeError):progress(text(dict(scripted,inputSource='other')),row['session'],clock=100,controls=True)
         self.assertEqual(progress(text(dict(row,phase='starting',frames=0)),row['session'],clock=180)['frames'],0)
         with self.assertRaises(RuntimeError): progress(text(dict(row,phase='starting',frames=0)),row['session'],clock=191)
         for key, value in [('session','b'*32),('unixMs',96000),('neutralInput',False),('forceMuted',False),('deviceInput',True),('network',True)]:

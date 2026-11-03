@@ -23,7 +23,7 @@ function Census([object[]]$Rows){
  Add-Content "$live/job-census.jsonl" $line -Encoding utf8NoBOM
 }
 function State([bool]$Ok){
- @{unix=[DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()/1000.0;ok=$Ok;pending=($observer -and [Dirt4Readback.Observer]::Pending);cleanup=$cleanup}|ConvertTo-Json -Compress|Set-Content "$stateFile.tmp" -Encoding utf8NoBOM
+ @{session=$plan.session;unix=[DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()/1000.0;ok=$Ok;pending=($observer -and [Dirt4Readback.Observer]::Pending);cleanup=$cleanup;adopted=$adopted}|ConvertTo-Json -Compress|Set-Content "$stateFile.tmp" -Encoding utf8NoBOM
  [DaytonaSnapshot]::Publish("$stateFile.tmp",$stateFile)
 }
 function VerifyOwner([string]$Before,[string]$After){
@@ -40,7 +40,7 @@ function CloseOwnedGame {
 try {
  Add-Type -Path $plan.job;Add-Type -Path $plan.observer;Add-Type -Path "$PSScriptRoot/Snapshot.cs"
  if([Dirt4Readback.Observer]::RawIdleSeconds -lt 180){throw 'Raw idle below 180 seconds'}
- & E:/Source/dbce-project-mgmt/tools/Rig-Lease.ps1 -Enter -Name remi-daytona-live -Purpose "GO$Go Daytona 1800-frame neutral attract R1/R2" -IdleMinutes 3
+ & E:/Source/dbce-project-mgmt/tools/Rig-Lease.ps1 -Enter -Name remi-daytona-live -Purpose "GO$Go Daytona $($plan.frames)-frame $($plan.case) R1/R2" -IdleMinutes 3
  if(-not $?){throw 'Lease refused'};$lease=$true
  $display=[TruckfulLive]::DisplayIdentity();$display|Set-Content "$live/display-before.txt"
  VerifyOwner "$out/owner-preflight.json" "$live/owner-before.json"

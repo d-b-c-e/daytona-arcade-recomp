@@ -15,7 +15,10 @@ def snapshot(roots):
                     dirs[d.relative_to(p).as_posix()] = dict(attributes=s.st_file_attributes,
                         creationUtcTicks=s.st_birthtime_ns // 100 + 621355968000000000,
                         writeUtcTicks=s.st_mtime_ns // 100 + 621355968000000000)
-        result[name] = {'present': p.exists(), 'directories': dirs, 'files': inventory(p) if p.exists() else {}}
+        files=inventory(p) if p.exists() else {}
+        if any(row['attributes'] & 0x200 for row in files.values()):
+            raise ValueError('Sparse owner file needs an extent-aware verifier; this read-only case does not claim it')
+        result[name] = {'present': p.exists(), 'directories': dirs, 'files': files}
     return result
 
 if __name__ == '__main__':

@@ -1,5 +1,7 @@
-param([Parameter(Mandatory)][ValidatePattern('^attempt-[0-9]{2}$')][string]$Attempt)
+param([Parameter(Mandatory)][ValidatePattern('^attempt-[0-9]{2}$')][string]$Attempt,
+ [ValidateSet('Neutral','Controls')][string]$Case='Neutral')
 $ErrorActionPreference='Stop'
+$Case=if($Case -eq 'Controls'){'Controls'}else{'Neutral'}
 $root=(Resolve-Path "$PSScriptRoot/../..").Path
 $out=Join-Path $root "build/readback/$Attempt"
 if(Test-Path $out){throw 'Fresh attempt required'}
@@ -30,6 +32,8 @@ $capturePayload=@(Get-ChildItem (Split-Path $capture) -File|ForEach-Object FullN
 $pins=@(foreach($p in @($candidate,$rom,$job,$observer,$python,$console,"$out/owner-roots.json","$out/owner-preflight.json")+$capturePayload+(Get-ChildItem $PSScriptRoot -File|ForEach-Object FullName)){
  @{path=[IO.Path]::GetFullPath($p);sha256=(Get-FileHash -LiteralPath $p -Algorithm SHA256).Hash}
 })
-$plan=@{source=$receipt.source;runnerSource=$commit;attemptRoot=$out;session=[Guid]::NewGuid().ToString('N');candidate=$candidate;rom=$rom;capture=$capture;job=$job;observer=$observer;python=$python;consoleHost=$console;pins=$pins;frames=1800}
+$frames=if($Case -eq 'Controls'){6000}else{1800}
+$captureAt=if($Case -eq 'Controls'){@(3500,3950,4400,5700)}else{@(600,1200)}
+$plan=@{source=$receipt.source;runnerSource=$commit;attemptRoot=$out;session=[Guid]::NewGuid().ToString('N');candidate=$candidate;rom=$rom;capture=$capture;job=$job;observer=$observer;python=$python;consoleHost=$console;pins=$pins;frames=$frames;case=$Case;captureAt=$captureAt;program=(Join-Path $PSScriptRoot 'control-program.txt')}
 $plan|ConvertTo-Json -Depth 6|Set-Content "$out/prepared.json" -Encoding utf8NoBOM
 Get-FileHash "$out/prepared.json"

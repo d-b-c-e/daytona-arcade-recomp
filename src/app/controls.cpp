@@ -222,11 +222,12 @@ rt::Inputs Controls::sample(const bool *keys, const Devices &d) {
     in.brake = uint8_t(std::lround(0x20 + std::clamp(brake, 0.f, 1.f) * 0xc0));
 
     // Gears: direct selection, or sequential shifts on the press
+    bool direct_held = false;
     for (int g = 0; g < 4; g++)
-        if (value(Action(Gear1 + g), keys, d) > 0.5f) gear = g + 1;
+        if (value(Action(Gear1 + g), keys, d) > 0.5f) gear = g + 1, direct_held = true;
     for (Action a : {GearUp, GearDown}) {
         const bool now = value(a, keys, d) > 0.5f;
-        if (now && !held_[a]) gear = std::clamp(gear + (a == GearUp ? 1 : -1), 1, 4);
+        if (!direct_held && now && !held_[a]) gear = std::clamp(gear + (a == GearUp ? 1 : -1), 1, 4);
         held_[a] = now;
     }
     static const uint8_t gearvalue[5] = {0, 2, 1, 6, 5}; // MAME daytona_gearbox_r: neutral, 1-4

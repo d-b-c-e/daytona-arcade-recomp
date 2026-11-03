@@ -62,6 +62,7 @@ void GameLoop::probe() {
         const uint64_t since = ls_->count - frame_start_;
         if ((idle && since >= kMinFrame) || since >= kFrameCap) {
             board_->io().inputs = inputs_;
+            if (board_->io().observation.enabled) board_->io().observation.offered_frame = frames_ + 1;
             {
                 auto sample = profiler_.measure(profiler_.frame.geometry);
                 board_->vblank_start();

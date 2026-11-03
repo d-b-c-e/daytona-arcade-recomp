@@ -45,6 +45,22 @@ struct Inputs {
 // carries the drive board's command set).
 class IoBoard {
 public:
+    struct InputObservation {
+        bool enabled = false;
+        uint64_t offered_frame = 0, latched_frame = 0, polls = 0;
+        std::array<uint64_t, 11> reads{}, read_frames{}, read_polls{};
+        std::array<uint8_t, 11> values{};
+    } observation;
+    // Diagnostic observer only. Call for the byte lanes the CPU actually requests,
+    // never for the unused paired lane fetched internally by dev_read.
+    void observe_read(uint32_t index) {
+        if (observation.enabled && index < observation.reads.size()) {
+            ++observation.reads[index];
+            observation.values[index] = ram_[index];
+            observation.read_frames[index] = observation.latched_frame;
+            observation.read_polls[index] = observation.polls;
+        }
+    }
     uint8_t read(uint32_t index) const { return ram_[index & 0x7ff]; }
     void write(uint32_t index, uint8_t v);
     Inputs inputs;

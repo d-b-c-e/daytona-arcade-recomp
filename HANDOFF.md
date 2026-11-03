@@ -1,5 +1,72 @@
 # Handoff
 
+## Ordinary control-consumer milestone — request503490
+
+Current work is offline implementation, not a new runtime pass. The earlier
+neutral-attract PASS and exact CF3BB506/a7edd8fa payload remain retained below and
+in `build/readback/attempt-02/frozen-payload/`. No build, guest execution, hook,
+device, capture or lease has started for this milestone yet.
+
+The diagnostic's finite private key-state array now enters the **existing
+Controls::sample** with empty Devices, then the ordinary graphical GameLoop.
+It never sets SDL/Windows global key state, posts input, attaches a virtual pad,
+or opens a physical input device. The old tools/common/input_script.h path
+bypasses the sampler, so it is not used as ordinary-control proof. Menu timings
+in the new6000-frame program follow the retained race_steer_right workload.
+
+| Control | Software observation available | Unqualified boundary |
+|---|---|---|
+| Steering | Production keyboard ramp/invert/release; requested packet -> actual masked guest MMIO read -> raw and filtered guest ADC cache. | Physical wheel axis/range/feel; car heading/position field is not bound. |
+| Accelerator/brake | Production ADC endpoints and release; actual guest reads and raw/filtered caches, separate steady acceleration/braking/release phases. | Vehicle speed is not inferred from pedal input; correlate captured HUD/scene if present. No verified speed/RPM field. |
+| Gear/shift | Actual sequential edge handling and MAME gearbox bits in the guest-return/cache word; independent expected1/2/3/2/3/4 sequence. A held direct gate now wins over a simultaneous shift, per STD-043. | Input gear is not an independently observed engaged transmission; manual-mode/HUD evidence remains runtime work. |
+| Coin/start | Guest digital cache bits, actual polls and raw game-mode dispatch transitions, plus planned exact-window menu/race images. | No real key/button reachability or physical binding acceptance. Mode numbers remain raw until content establishes semantics. |
+
+Cache provenance was traced read-only through retained daytona93 generated code:
+main calls the ADC/digital readers at guest0x1800/0x1808; ADC reader0x1c0c0
+stores raw histories at0x53e000+4*channel and four-sample sums scaled64 at
+0x53e5c0+2*channel. Digital reader0x1c020 stores the inverted button word at
+0x53e120 (IN0 low byte; IN1 byte2). Mode dispatcher0x1898 copies0x5010a4 to
+0x5010a0 and dispatches through the31-entry table at0x18cc. These are our address
+and semantic notes; no generated code, ROM or disassembly is committed.
+
+The I/O observer records **only masked CPU-requested lanes**, not both paired
+bytes dev_read internally fetches. It attributes each latch/read to the input
+frame applied at vblank; observer cache reads do not increment these counters.
+Per-frame controls.jsonl records request, source-frame/poll/read counters,
+guest-written caches and raw modes. It does not label an ADC as vehicle speed.
+
+Controls require the existing private-state and no-force latch plus environment
+mute, an immutable bounded ASCII-UTF8 program carrying the exact nonce, frame
+budget and <=5min expiry, and a fresh nonce/adopted/ok/nonpending/noncleanup
+supervisor snapshot **every frame**. The Windows reader opens READ with
+READ|WRITE|DELETE sharing and closes before parsing. Failed read, duplicate or
+malformed metadata, wrong session, expiry, stopped/stale parent or lost admission
+after arming terminally revokes input; the reader returns neutral and cannot
+re-arm. An immediate neutral packet is submitted on revocation. First failure
+reason is immutable. Cold adoption/pending states admit no script keys.
+
+Prepared scope is6000 frames (~104s native pacing), four <=2s/max3-image bursts
+after3500/3950/4400/5700, existing150s worker/190s job +45s cleanup bounds.
+Capture context retains R1 frame/time brackets; it is not an exact frame-to-PNG
+presentation witness. The final500 frames release pedals/buttons and centre
+steering; selected gear persists as ordinary keyboard mapping does. Native stdout
+is now directed to the private log for readback, while JSONL/PNGs remain primary.
+
+New R0 target links actual Controls and M2Board I/O to **inert SDL stubs**, with
+a TGP stub that aborts if any guest execution is attempted. It covers the full
+6000-frame private program, mapping/edge/held-gate rules, malformed/replay/expiry/
+late guards, per-byte lane counters and observer non-interference. The actual C++
+guard reader also replaces the Python watcher in the1001-publication job/shared
+snapshot rehearsal. Python fixtures cover wrong trace nonce/frame/counter/value,
+hidden-file inventory and an actual owned-file FSCTL sparse mark/refusal. This
+route does not copy/restore owner files or relabel sparse attributes; sparse owner
+files require an extent-aware verifier and are refused before admission.
+
+Next: static review, one coordinated max2-worker CPU build/inert suite/rehearsal,
+then freeze a fresh Controls manifest and request ONE live GO. No new runtime
+claim exists. STD001–010 remain unchecked; touched034/035/043 portions are partial,
+not a complete profile/physical adoption. Public origin remains local-only.
+
 # Private neutral attract readback — 2026-11-03
 
 Private native candidate adds an explicit private preference directory before SDL

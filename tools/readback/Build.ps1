@@ -21,13 +21,17 @@ try {
  $inputs|ConvertTo-Json|Set-Content "$root/build/readback-generated-inputs.json"
  & cmake -S $root -B "$root/build" -G 'Visual Studio 17 2022' -T ClangCL -DM2_ROMSET=daytona93
  if($LASTEXITCODE){throw 'Configure failed'}
- & cmake --build "$root/build" --config Release --target daytona test_readback --parallel 2
+ & cmake --build "$root/build" --config Release --target daytona test_readback test_scripted_input --parallel 2
  if($LASTEXITCODE){throw 'Build failed'}
- Push-Location "$root/build"
- try{& ./Release/test_readback.exe;if($LASTEXITCODE){throw 'Fake-SDL readback fixture failed'}}finally{Pop-Location}
- & "$PSScriptRoot/Rehearse.ps1" -Output "$root/build/readback/rehearsal-go$Go"
+ $r0=(New-Item -ItemType Directory "$root/build/readback/r0-go$Go").FullName
+ Push-Location $r0
+ try{
+  & "$root/build/Release/test_readback.exe";if($LASTEXITCODE){throw 'Fake-SDL readback fixture failed'}
+  & "$root/build/Release/test_scripted_input.exe" "$PSScriptRoot/control-program.txt";if($LASTEXITCODE){throw 'Production ordinary-input/guard/MMIO fixture failed'}
+ }finally{Pop-Location}
+ & "$PSScriptRoot/Rehearse.ps1" -Output "$root/build/readback/rehearsal-go$Go" -ReaderExe "$root/build/Release/test_scripted_input.exe"
  if(-not $?){throw 'Rehearsal failed'}
  if((git -C $root rev-parse HEAD).Trim() -cne $source -or (git -C $root status --porcelain --untracked-files=no)){throw 'Source changed during build'}
- @{source=$source;go=$Go;candidate=(Get-FileHash "$root/build/Release/daytona.exe").Hash;generatedInputs=(Get-FileHash "$root/build/readback-generated-inputs.json").Hash;fakeSdl='pass';readerJobRehearsal='pass';runtime='unrun'}|ConvertTo-Json|Set-Content "$root/build/readback-build.json"
+ @{source=$source;go=$Go;candidate=(Get-FileHash "$root/build/Release/daytona.exe").Hash;generatedInputs=(Get-FileHash "$root/build/readback-generated-inputs.json").Hash;fakeSdl='pass';ordinaryConsumerGuardMmio='pass';readerJobRehearsal='native-shared-reader-pass';runtime='unrun'}|ConvertTo-Json|Set-Content "$root/build/readback-build.json"
  Get-Content "$root/build/readback-build.json"
 }finally{if($held){& E:/Source/dbce-project-mgmt/tools/Rig-Lease.ps1 -Exit -Name remi-daytona-cpu}}

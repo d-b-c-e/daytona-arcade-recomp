@@ -23,7 +23,7 @@ def gate(path, clock=None, require_cleared=True):
         raise RuntimeError('supervisor stopped, pending owner activity or heartbeat stale')
     return state
 
-def progress(text, session, previous=-1, clock=None):
+def progress(text, session, previous=-1, clock=None, controls=False):
     lines = text.splitlines(keepends=True)
     rows = [json.loads(line) for line in lines if line.endswith('\n')]
     if not rows:
@@ -36,6 +36,8 @@ def progress(text, session, previous=-1, clock=None):
     freshness = 90 if row['phase'] == 'starting' else 3
     if row['session'] != session or row['sequence'] < previous or not 0 <= age <= freshness:
         raise RuntimeError('wrong session, replay or stale game readback')
-    if not row['neutralInput'] or not row['forceMuted'] or row['deviceInput'] or row['network']:
+    if (not controls and not row['neutralInput']) or not row['forceMuted'] or row['deviceInput'] or row['network']:
         raise RuntimeError('game isolation witness refused')
+    if controls and (not row.get('scriptedInput') or row.get('inputSource')!='private-key-array'):
+        raise RuntimeError('wrong ordinary-input provider')
     return row

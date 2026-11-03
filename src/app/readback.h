@@ -16,12 +16,13 @@ struct Readback {
     std::ofstream log;
     unsigned sequence = 0;
     bool requested = false;
+    bool controls = false, neutral = true;
     explicit operator bool() const { return !dir.empty(); }
-    static unsigned budget(std::string_view value) {
+    static unsigned budget(std::string_view value, bool scripted = false) {
         unsigned n = 0;
         const auto r = std::from_chars(value.data(), value.data() + value.size(), n);
-        if (r.ec != std::errc{} || r.ptr != value.data() + value.size() || n < 600 || n > 3600)
-            throw std::runtime_error("readback requires 600..3600 whole frames");
+        if (r.ec != std::errc{} || r.ptr != value.data() + value.size() || n < 600 || n > (scripted ? 7200u : 3600u))
+            throw std::runtime_error("readback requires a bounded whole-frame budget");
         return n;
     }
     void validate(bool environment_mute) {
@@ -29,7 +30,7 @@ struct Readback {
         if (!*this || !environment_mute || session.size() != 32 ||
             !std::all_of(session.begin(), session.end(), [](char c) { return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'); }))
             throw std::runtime_error("readback requires a private absolute directory, 32 lowercase hex session and DBCE_FFB_MUTE=1");
-        budget(std::to_string(frames));
+        budget(std::to_string(frames), controls);
         const std::filesystem::path p(dir);
         if (!p.is_absolute() || !std::filesystem::is_directory(p) || std::filesystem::is_symlink(p) ||
             std::filesystem::exists(p / "readback.jsonl"))
@@ -50,7 +51,10 @@ struct Readback {
         log << "{\"session\":\"" << session << "\",\"sequence\":" << ++sequence
             << ",\"unixMs\":" << ms << ",\"phase\":\"" << phase << "\",\"frames\":" << frame
             << ",\"presents\":" << presents << ",\"hardware\":" << (hardware ? "true" : "false")
-            << ",\"neutralInput\":true,\"forceMuted\":true,\"deviceInput\":false,\"network\":false}\n";
+            << ",\"neutralInput\":" << (neutral ? "true" : "false")
+            << ",\"scriptedInput\":" << (controls ? "true" : "false")
+            << ",\"inputSource\":\"" << (controls ? "private-key-array" : "neutral")
+            << "\",\"forceMuted\":true,\"deviceInput\":false,\"network\":false}\n";
         log.flush();
         if (!log) throw std::runtime_error("private readback write failed");
     }

@@ -21,6 +21,7 @@
 #include "app/launcher.h"
 #include "app/native_audio.h"
 #include "app/readback.h"
+#include "app/scripted_input.h"
 #include "runtime/native_sound_engine.h"
 #include "runtime/game_loop.h"
 #include "runtime/rom_import.h"
@@ -155,9 +156,9 @@ int fail(const char *what) {
 // Windows builds daytona as a GUI program, which has no console of its own:
 // nothing it prints is seen. Started from a command window, attach to that
 // window; otherwise write to daytona.log beside the settings.
-void open_log() {
+void open_log(bool private_log = false) {
 #ifdef _WIN32
-    if (AttachConsole(ATTACH_PARENT_PROCESS)) {
+    if (!private_log && AttachConsole(ATTACH_PARENT_PROCESS)) {
         std::freopen("CONOUT$", "w", stdout);
         std::freopen("CONOUT$", "w", stderr);
         std::printf("\n");
@@ -173,11 +174,14 @@ void open_log() {
 
 int main(int argc, char **argv) {
     app::Readback readback;
+    app::ScriptedInput control_program;
+    std::ofstream control_trace;
     const char *mute_env = std::getenv("DBCE_FFB_MUTE");
     const bool environment_mute = mute_env && !std::strcmp(mute_env, "1");
     try {
         for (int i = 1; i < argc; ++i) {
             const std::string arg = argv[i];
+            if (arg == "--readback-controls") { readback.controls = readback.requested = true; continue; }
             if (arg == "--readback-state" || arg == "--readback-session") {
                 readback.requested = true;
                 if (i + 1 == argc) throw std::runtime_error("missing readback value");
@@ -188,9 +192,16 @@ int main(int argc, char **argv) {
         }
         if (readback.requested) {
             for (int i = 1; i + 1 < argc; ++i)
-                if (!std::strcmp(argv[i], "--frames")) readback.frames = app::Readback::budget(argv[++i]);
+                if (!std::strcmp(argv[i], "--frames")) readback.frames = app::Readback::budget(argv[++i], readback.controls);
             readback.validate(environment_mute);
             app::Config::pref_override = readback.dir;
+            if (readback.controls) {
+                const auto now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+                control_program.load(app::read_shared_bounded(readback.dir + "controls.txt", 65536), readback.session, readback.frames, uint64_t(now));
+                control_program.guard_path = (std::filesystem::path(readback.dir) / ".." / "supervisor.json").lexically_normal().string();
+                control_trace.open(readback.dir + "controls.jsonl", std::ios::binary);
+                if (!control_trace) throw std::runtime_error("cannot create private input trace");
+            }
         }
     } catch (const std::exception &e) {
         std::fprintf(stderr, "daytona: %s\n", e.what());
@@ -198,7 +209,7 @@ int main(int argc, char **argv) {
     }
     for (int i = 1; i + 1 < argc; i++) // before anything reads or writes the data folder
         if (!std::strcmp(argv[i], "--profile")) app::Config::profile = argv[i + 1];
-    open_log();
+    open_log(bool(readback));
     app::Config cfg;
     cfg.load();
     uint64_t max_frames = 0;
@@ -220,6 +231,7 @@ int main(int argc, char **argv) {
         else if ((!std::strcmp(argv[i], "--readback-state") || !std::strcmp(argv[i], "--readback-session")) && i + 1 < argc) ++i;
     }
     if (readback) {
+        if (readback.controls) cfg.controls.set_defaults(); // private default keyboard mapping; no owner profile
         cfg.fullscreen = false;
         cfg.renderer = "hardware";
         cfg.link = false;
@@ -340,6 +352,7 @@ int main(int argc, char **argv) {
                 if (!have_audio) std::fprintf(stderr, "daytona: reference audio unavailable (%s)\n", SDL_GetError());
             }
             game = std::make_unique<rt::GameLoop>(std::move(images), !native_active);
+            game->board().io().observation.enabled = readback.controls;
             std::printf("daytona: audio backend %s\n", native_active
                 ? "native (experimental, 48000 Hz device clock; no reference sound board)" : "reference");
             load_file(eeprom_path, game->board().io().eeprom);
@@ -439,7 +452,21 @@ int main(int argc, char **argv) {
             game->set_stretch_backdrop(cfg.stretch_backdrop);
             rt::GameLoop::set_draw_distance(cfg.draw_distance);
             while (pending >= frame_ns) {
-                game->run_frame(readback ? rt::Inputs{} : cfg.controls.sample(SDL_GetKeyboardState(nullptr), devices));
+                rt::Inputs inputs;
+                if (readback.controls) {
+                    const auto utc_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+                    const auto keys = control_program.tick(game->frames() + 1, cfg.controls, uint64_t(utc_ms));
+                    if (control_program.revoked) running = false; // immediate neutral, no later re-arm
+                    else inputs = cfg.controls.sample(keys.data(), devices);
+                    readback.neutral = inputs.steer == 0x80 && inputs.accel == 0x20 && inputs.brake == 0x20 &&
+                                       inputs.in0 == 0xff && (inputs.in1 & 0x0f) == 0x0f;
+                } else if (!readback) inputs = cfg.controls.sample(SDL_GetKeyboardState(nullptr), devices);
+                game->run_frame(inputs);
+                if (readback.controls) {
+                    control_program.write_trace(control_trace, game->frames(), inputs, cfg.controls, game->board());
+                    control_trace.flush();
+                    if (!control_trace) control_program.revoke("input trace write failed"), running = false;
+                }
                 if (native_active) {
                     const auto bytes = game->board().take_sound_bytes();
                     if (!native_audio.send(bytes.data(), bytes.size())) {

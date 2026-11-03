@@ -1,4 +1,4 @@
-param([Parameter(Mandatory)][string]$Output)
+param([Parameter(Mandatory)][string]$Output,[string]$ReaderExe)
 $ErrorActionPreference='Stop'
 if(Test-Path $Output){throw 'Fresh rehearsal output required'}
 $out=(New-Item -ItemType Directory $Output).FullName
@@ -8,12 +8,14 @@ if((Get-FileHash $job).Hash -cne '725E52B00A36B8189BF4BAF3CF201D1266614B49DB124F
 Add-Type -Path $job;Add-Type -Path "$PSScriptRoot/Snapshot.cs"
 . "$PSScriptRoot/JobPolicy.ps1"
 $file=Join-Path $out 'state.json'
-function Publish($n){@{n=$n}|ConvertTo-Json -Compress|Set-Content "$file.tmp" -Encoding utf8NoBOM;[DaytonaSnapshot]::Publish("$file.tmp",$file)}
+function Publish($n){@{session=('a'*32);unix=$n;ok=$true;pending=$false;cleanup=$false;adopted=$true}|ConvertTo-Json -Compress|Set-Content "$file.tmp" -Encoding utf8NoBOM;[DaytonaSnapshot]::Publish("$file.tmp",$file)}
 Publish 0
 $argsRun=@('-B',"$PSScriptRoot/test_shared.py",'--watch',$file,"$out/reader.json")
-$identity=[TruckfulLive]::Launch($python,$out,(($argsRun|ForEach-Object{'"'+$_+'"'})-join ' '))
+$rootExe=$python
+if($ReaderExe){$rootExe=(Resolve-Path $ReaderExe).Path;$argsRun=@('--watch-guard',$file,"$out/reader.json")}
+$identity=[TruckfulLive]::Launch($rootExe,$out,(($argsRun|ForEach-Object{'"'+$_+'"'})-join ' '))
 $identity|ConvertTo-Json|Set-Content "$out/root.json"
-$plan=@{python=$python;candidate=(Join-Path $out 'unused-game.exe');capture=(Join-Path $out 'unused-capture.exe');consoleHost=(Join-Path ([Environment]::GetFolderPath('System')) 'conhost.exe')}
+$plan=@{python=$rootExe;candidate=(Join-Path $out 'unused-game.exe');capture=(Join-Path $out 'unused-capture.exe');consoleHost=(Join-Path ([Environment]::GetFolderPath('System')) 'conhost.exe')}
 $seen=@{}
 function CheckCensus {
  foreach($childId in @([TruckfulLive]::JobPids())){
@@ -38,17 +40,17 @@ if(@([TruckfulLive]::JobPids()).Count){Write-Output 'CUSTODY_RETAINED: rehearsal
 [TruckfulLive]::ReleaseJob()
 # Exercise the production image/epoch classifier with inert identities.
 $cases=@(
- @(@{pid=$identity.pid;birth=$identity.birth;image=$python},'root'),
+ @(@{pid=$identity.pid;birth=$identity.birth;image=$rootExe},'root'),
  @(@{pid=1;birth=$identity.birth+1;image=$plan.consoleHost},'console-host'),
  @(@{pid=1;birth=$identity.birth-1;image=$plan.consoleHost},'unknown-epoch'),
  @(@{pid=1;birth=$identity.birth+1;image=(Join-Path $out 'conhost.exe')},'unknown-image'),
- @(@{pid=$identity.pid+1;birth=$identity.birth+1;image=$python},'unknown-python'),
+ @(@{pid=$identity.pid+1;birth=$identity.birth+1;image=$rootExe},'unknown-python'),
  @(@{pid=1;birth=$identity.birth+1;image=$plan.capture},'capture')
 )
 foreach($case in $cases){if((Get-OwnedJobRole $case[0] $identity $plan) -ne $case[1]){throw 'Production job classifier assertion failed'}}
 $result=Get-Content "$out/reader.json" -Raw|ConvertFrom-Json
 if($result.errors.Count -or $result.reads -lt 1){throw 'Shared-delete stress failed'}
-& $python -B "$PSScriptRoot/test_shared.py"
-if($LASTEXITCODE){throw 'Production admission/owner fixtures failed'}
+Push-Location $out
+try{& $python -B "$PSScriptRoot/test_shared.py";if($LASTEXITCODE){throw 'Production admission/owner fixtures failed'}}finally{Pop-Location}
 @{publications=1001;reads=$result.reads;errors=$result.errors;jobPolicyCases=$cases.Count;jobIdentities=@($seen.Values);jobEmpty=$true;hooksStarted=$false;gamesStarted=$false}|ConvertTo-Json -Depth 6|Set-Content "$out/result.json"
 Get-Content "$out/result.json"

@@ -27,6 +27,10 @@ void IoBoard::write(uint32_t index, uint8_t v) {
     if (index != 0x20) return;
     switch (v) {
     case 1: // latch inputs
+        if (observation.enabled) {
+            ++observation.polls;
+            observation.latched_frame = observation.offered_frame;
+        }
         ram_[0] = inputs.steer;
         ram_[1] = inputs.accel;
         ram_[2] = inputs.brake;
@@ -251,6 +255,8 @@ uint32_t M2Board::dev_read(uint32_t addr, uint32_t mask) {
     }
     if (addr >= 0x01c00000 && addr <= 0x01c00fff) { // MB8421 through umask 0x00ff00ff
         const uint32_t i = ((addr & 0xfff) >> 2) * 2;
+        if (mask & 0x000000ff) io_.observe_read(i);
+        if (mask & 0x00ff0000) io_.observe_read(i + 1);
         return uint32_t(io_.read(i)) | uint32_t(io_.read(i + 1)) << 16;
     }
     if (addr >= 0x10000000 && addr <= 0x101fffff) return uint32_t(render_unk_) << 14 | uint32_t(render_mode_) << 2 | uint32_t(render_test_);

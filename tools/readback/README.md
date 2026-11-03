@@ -1,5 +1,37 @@
 # Neutral attract readback
 
+## Ordinary control case (implementation, not qualified yet)
+
+`Prepare.ps1 -Attempt attempt-NN -Case Controls` selects the finite6000-frame
+`control-program.txt`; Neutral retains the earlier1800-frame case. The worker
+creates a private controls.txt with one nonce/expiry/header and immutable commands.
+The game loads it once, and feeds local key arrays through **Controls::sample**,
+empty Devices and the same graphical GameLoop. It does not mutate SDL keyboard
+state or send Windows input. Every frame checks the fresh session-bound parent
+snapshot after own-job adoption; failed/stale/stopped/expired/lost admission
+terminally clears the reader and cannot re-arm. Force/device/audio/network fences
+are the same independent latches as the qualified neutral case.
+
+controls.jsonl separates offered packets, actual masked guest reads and copied
+guest RAM input caches, with frame attribution and wall timestamps. ADC cache
+addresses0x53e000/004/008 and filtered0x53e5c0/c2/c4 derive from guest0x1c0c0;
+digital0x53e120 derives from0x1c020 called by the main loop. Raw mode bytes are
+0x5010a0/a4. The analyzer requires returned values to match their own input frame,
+steady raw/filtered endpoints, independent gear expectations, presses and release.
+These are input/guest-state witnesses, not speed/pose or engaged-gear fields.
+
+Four native-window intervals after3500/3950/4400/5700 retain before/after R1
+frame/time context plus PNGs. The last500 frames are a release phase. Car response
+requires actual scene/HUD evidence; software caches cannot establish physical
+wheel/FFB, a real key press, transmission mode, triples or owner acceptance.
+See HANDOFF.md for the control/state map, code provenance and pending gates.
+
+`test_scripted_input` links the actual sampler and M2Board to inert SDL functions,
+without an SDL library, device initialization or guest code. Its live-file watcher
+uses the production shared-delete reader/parser during the native snapshot/job
+rehearsal. Hidden-file metadata is included; sparse owner files are explicitly
+refused by this non-restoring route. No extent-preserving restore is claimed.
+
 The first case checks native startup, exactly 1800 neutral board frames, hardware
 renderer progress, two bounded window captures, native exit and owner-state
 preservation. It does not test control delivery, racing, wheel acquisition,

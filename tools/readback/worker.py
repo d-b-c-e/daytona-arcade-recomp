@@ -1,6 +1,7 @@
 """Own-job root. Only invoked by the suspended-root controller after live GO."""
 import ctypes, ctypes.wintypes as wt, hashlib, json, pathlib, subprocess, sys, time, traceback
 from shared import gate, progress, read
+from analyze_controls import analyze
 
 user = ctypes.WinDLL('user32', use_last_error=True)
 kernel = ctypes.WinDLL('kernel32', use_last_error=True)
@@ -31,7 +32,8 @@ def window_owned(hwnd, pid):
 def run(plan, live):
     state = live / 'supervisor.json'; private = live / 'state'; private.mkdir()
     exe = pathlib.Path(plan['candidate']); cap = plan['capture']; session = plan['session']
-    game = None; capture = None; hwnd = None; failure = None; rows = None; bursts = []
+    controls = plan.get('case') == 'Controls'; budget = plan['frames']; capture_at = plan.get('captureAt',[600,1200])
+    game = None; capture = None; hwnd = None; failure = None; rows = None; bursts = []; capture_context=None
     def dump(name, data): (live / name).write_text(json.dumps(data, indent=1))
     def closing():
         (live / 'supervisor.closing').touch()
@@ -45,25 +47,31 @@ def run(plan, live):
         (private / 'cleanup.ok').write_text(session)
     try:
         gate(state)
+        extra=[]
+        if controls:
+            template=pathlib.Path(plan['program']).read_text(encoding='utf-8')
+            (private/'controls.txt').write_text(f'session {session}\nexpires_ms {int(time.time()*1000)+300000}\n'+template,encoding='utf-8')
+            extra=['--readback-controls']
         with (live / 'game-stdout.txt').open('wb') as output:
-            game = subprocess.Popen([str(exe), '--rom', plan['rom'], '--autostart', '--frames', '1800',
-                '--readback-state', str(private), '--readback-session', session], cwd=exe.parent,
+            game = subprocess.Popen([str(exe), '--rom', plan['rom'], '--autostart', '--frames', str(budget),
+                '--readback-state', str(private), '--readback-session', session]+extra, cwd=exe.parent,
                 stdin=subprocess.DEVNULL, stdout=output, stderr=subprocess.STDOUT,
                 creationflags=subprocess.CREATE_NO_WINDOW)
         who = identity(game, exe); dump('worker-game.json', who)
-        begin = time.monotonic(); sequence = -1; next_burst = 600; last_frame = 0; last_advance = begin
+        begin = time.monotonic(); sequence = -1; last_frame = 0; last_advance = begin
         while game.poll() is None:
             supervisor = gate(state, require_cleared=False) # pending raw startup resets inhibit captures; parent resolves legality
             if time.monotonic() - begin > 150: raise RuntimeError('startup/guest completion deadline exceeded')
             if (private / 'readback.jsonl').exists():
-                rows = progress(read(private / 'readback.jsonl'), session, sequence)
+                rows = progress(read(private / 'readback.jsonl'), session, sequence, controls=controls)
                 if rows:
                     sequence = rows['sequence']
                     if rows['frames'] > last_frame: last_frame = rows['frames']; last_advance = time.monotonic()
                     if rows['frames'] and time.monotonic() - last_advance > 5: raise RuntimeError('guest frame progression stopped')
                     if rows['frames'] and not rows['hardware']: raise RuntimeError('hardware renderer witness absent')
                     if rows['phase'] == 'closing': closing(); break
-                    if rows['frames'] >= next_burst and capture is None and len(bursts) < 2 and not supervisor.get('pending'):
+                    next_burst = capture_at[len(bursts)] if len(bursts)<len(capture_at) else None
+                    if next_burst is not None and rows['frames'] >= next_burst and capture is None and not supervisor.get('pending'):
                         # Enumerator itself is an owned child, never desktop capture or foreground activation.
                         listing = subprocess.run([cap, str(game.pid), '--list'], capture_output=True, text=True, timeout=5, creationflags=subprocess.CREATE_NO_WINDOW)
                         if listing.returncode: raise RuntimeError('render-window enumeration failed: ' + listing.stderr)
@@ -73,26 +81,33 @@ def run(plan, live):
                         hwnd = windows[0]['Handle']
                         if not window_owned(hwnd, game.pid): raise RuntimeError('render HWND owner/class/visibility refused')
                         folder = live / f'capture-{next_burst}'
+                        capture_context=dict(trigger=next_burst,requestedR1=rows,launchUnixMs=int(time.time()*1000),folder=str(folder))
                         capture = subprocess.Popen([cap, str(game.pid), str(folder), '--hwnd', hex(hwnd), '--duration', '2', '--max-frames', '3'],
                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, creationflags=subprocess.CREATE_NO_WINDOW)
-                        bursts.append(folder); next_burst += 600
+                        bursts.append(folder)
             if capture is not None and capture.poll() is not None:
                 if capture.returncode: raise RuntimeError('R2 capture helper failed')
+                capture_context['completedR1']=rows
+                capture_context['completedUnixMs']=int(time.time()*1000)
+                dump(f'capture-context-{capture_context["trigger"]}.json',capture_context)
                 capture = None
             time.sleep(.05)
         if game.poll() is None:
             game.wait(timeout=15)
-        rows = progress(read(private / 'readback.jsonl'), session, sequence)
-        if game.returncode != 0 or rows['phase'] != 'complete' or rows['frames'] != 1800 or rows['presents'] < 1:
+        rows = progress(read(private / 'readback.jsonl'), session, sequence, controls=controls)
+        if game.returncode != 0 or rows['phase'] != 'complete' or rows['frames'] != budget or rows['presents'] < 1:
             raise RuntimeError('terminal exact-frame/readback/exit assertion failed')
         if capture is not None: capture.wait(timeout=10)
-        if len(bursts) != 2: raise RuntimeError('two distinct capture intervals required')
+        if len(bursts) != len(capture_at): raise RuntimeError('all planned distinct capture intervals required')
         for folder in bursts:
             record = json.loads((folder / 'capture.json').read_text())
             if record['status'] != 'complete' or not 1 <= record['saved'] <= 3: raise RuntimeError('R2 incomplete or empty')
             for frame in record['frames']:
                 if hashlib.sha256((folder / frame['File']).read_bytes()).hexdigest().lower() != frame['Sha256'].lower():
                     raise RuntimeError('captured frame hash differs')
+        if controls:
+            report=analyze(private/'controls.jsonl',session,budget,pathlib.Path(plan['program']))
+            dump('controls-result.json',report)
     except BaseException as e:
         failure = str(e); (live / 'worker-error.txt').write_text(traceback.format_exc())
     finally:

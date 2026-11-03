@@ -1,0 +1,25 @@
+# Finite ordinary-key workload. Menu timing follows race_steer_right.txt.
+# Frame numbers are one-based. No test/service, device or operating-system keys.
+frames 6000
+1200 1209 coin
+1240 1249 coin
+1280 1289 coin
+1400 1409 start
+1450 2350 steer_right
+1600 1609 start
+1800 1809 view1
+2000 2009 start
+2200 2209 view1
+2400 2409 start
+1400 3799 accelerate
+4200 5499 accelerate
+2600 3199 gear1
+3200 3201 gear_up
+3500 3501 gear_up
+3600 3601 gear_down
+4200 4201 gear_up
+4500 4501 gear_up
+3200 3240 steer_left
+3340 3380 steer_right
+3800 4199 brake
+# 5500..6000: released pedals/buttons, steering centred; selected gear persists.
