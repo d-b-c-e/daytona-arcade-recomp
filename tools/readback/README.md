@@ -83,3 +83,19 @@ cleanup bound 45 seconds. Capture/lease/owner proof still require live execution
 Design basis: design document sections “Architecture”, “Audio, inputs, force
 feedback, link play”, and “Platform layer & build”; no guest logic, rendering,
 FP arithmetic or native game rate changes.
+
+## Qualified neutral-attract run
+
+2026-11-03 GO503291 attempt-02 passed: runtime ea8ed4b7, runner a7edd8fa,
+candidate CF3BB506CB98C793D177DDB5EB15F05980781E820023CE1A64D88C9A20D83B5A.
+Exactly1800 guest frames and native exit0; two completed three-image R2 bursts
+show changing attract/demo race scenes and the coin prompt. All six994x800
+whole-window PNGs were reviewed and hash-checked. PID42772/birth639293173201252183,
+HWND18615560/SDL_app agree across game/capture receipts. Owner bytes, numeric
+UTC timestamps, attributes, presence, directories and display matched; LL0/0,
+raw resets0, no observer abort, full job empty, observer joined and lease released.
+See `build/readback/attempt-02/qualification.json` and HANDOFF.md for identities
+and evidence. No control-delivery, physical, triples or owner acceptance result.
+This qualifies the bounded no-input route, not an installed player upgrade or
+unsampled rendering/pacing. No private ordinary stdout log was retained; use
+the explicit JSONL and captured images for this run's assertions.

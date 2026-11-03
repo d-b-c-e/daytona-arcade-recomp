@@ -18,4 +18,4 @@ Seeded 2026-10-04 from what was verified that day; `unchecked` rows need a look.
 | STD-008 | Display changes: game applies once | unchecked |  |
 | STD-009 | Dashboard telemetry matches the HUD | unchecked |  |
 | STD-010 | Install the latest build for testing | unchecked |  |
-| STD-035 | Profile writers and test isolation | partial | Explicit private-state neutral attract readback and independent environment no-force latch; fake-SDL fixture added. No profile writer, device injection, runtime or physical acceptance claimed. |
+| STD-035 | Profile writers and test isolation | partial | Explicit private state and independent environment no-force latch;26 fake-SDL/private assertions and neutral-attract R1/R2 + exact owner verification passed GO503291. No profile writer, physical device injection or physical acceptance claimed. |

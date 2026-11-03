@@ -2,13 +2,41 @@
 
 # Private neutral attract readback — 2026-11-03
 
-Source-only candidate adds an explicit private preference directory before SDL
+Private native candidate adds an explicit private preference directory before SDL
 logging/config access, neutral board-input attract mode, immutable force-output
 mute and an independent `DBCE_FFB_MUTE=1` interlock. Ordinary player defaults and
 saved strengths remain intact. The native hardware renderer path is observed by
-flushed session/frame/present records and two planned exact-window capture bursts.
+flushed session/frame/present records and two completed exact-window capture bursts.
 See [the runner](tools/readback/README.md) for commands, bounds, owner protection,
 actual job/low-level observer dependencies and remaining evidence gates.
+
+**Current result: neutral-attract R1/R2 PASS, GO503291 attempt-02.** Runtime
+`ea8ed4b7`, frozen runner `a7edd8fa`, candidate
+`CF3BB506CB98C793D177DDB5EB15F05980781E820023CE1A64D88C9A20D83B5A`,
+prepared manifest `AAA8C605310448F61433875D458DD81369AC40522806AFA74817351762A4C386`.
+Fresh raw idle439.422s; named lease held15:41:59–15:42:33Z, about33.4s.
+
+| Assertion | Observed result |
+|---|---|
+| Native neutral progress / R1 | Exactly1800 guest frames,63 session records,5634 successful swap submissions; hardware renderer witness true; neutral input, force muted, device input false, network false; native exit0. |
+| Sampled rendered content / R2 | Two completed bursts after600/1200 frames, three distinct994x800 whole-window PNGs each. All six reviewed: changing banked-race/cars, then another camera/car scene and coin prompt. Capture spans0.1369s/0.1452s; this does not cover unsampled frames, pacing or occlusion. |
+| Exact game/window identity | PID42772, birth639293173201252183, HWND18615560, classSDL_app. Both capture manifests' process-start ticks match the retained native game identity; every PNG hash cross-checked. |
+| Owner, output and custody | Installed0AA57377… and all six installed/profile files plus directories unchanged. Before/after inventory hash00439F981CFBB53B7F29370688F7FD21E3DA59BDB36881EB83CC41075E87EE04; numeric UTC ticks, attributes and presence matched. Display unchanged, prelaunch OS foreground unchanged, LLphysical0/injected0/rawresets0/abortnull, observer unhooked/thread stopped, terminal job[] and lease7eab47354a014d1f89a5295e06e07acf released; slot/named receipt absent. |
+| Remaining gates | Control delivery, steering/pedals/gears, settings reachability, physical wheel/FFB, triples and owner acceptance remain untested. This is a private candidate, not an installed upgrade. |
+
+Primary evidence: `build/readback/attempt-02/{prepared,qualification}.json`,
+`controller.txt`, and `live/{result,worker-result,guard,game,job-census,job-after,
+owner-before,owner-after}.json` (census is JSONL), plus
+`live/capture-{600,1200}/{capture.json,frame-0001.png,frame-0002.png,frame-0003.png}`.
+Private settings/EEPROM/backup RAM were written only under `live/state/`.
+No private daytona.log was produced and game-stdout.txt is empty; JSONL and PNGs
+are the retained witnesses. The specific SDL GPU backend name is not established.
+No public push, install, owner settings write or further game launch.
+
+This bounded assignment is complete. The next engineering milestone is an
+explicit, finite same-GameLoop board-input script with control/state assertions;
+that would still not qualify physical SDL bindings. It needs a separate bounded
+assignment and runtime scope. Preserve this passing candidate and evidence.
 
 CPU GO502841 built source `6d4f982` successfully: candidate
 `D6ABB26243A107AA3B07FA09014DB2FC56911ACF092FE1CD896FD9FCBCBB6C2B`,
@@ -79,9 +107,8 @@ No game/hook/device/input/GPU/owner action. Evidence:
 An isolated invocation of the production Census function also retained one
 identity then an exact empty array (not null): `build/readback/census-serialization/`.
 The runtime binary and its 26 passing force/private-state assertions are unchanged.
-Next: freeze fresh attempt-02, request one live GO, wait for preceding operator's
-FINAL release and measured fresh raw idle180s before invoking the controller.
-R1/R2 native startup/rendering remains unverified.
+Attempt-02 then passed under GO503291 as recorded above. The previous operator's
+FINAL release and measured fresh raw idle180s remain prerequisites for later runs.
 No owner/installed write or public push. Existing adoption
 rows STD-001–010 remain unchecked; only touched STD-035 scope is marked partial.
 
