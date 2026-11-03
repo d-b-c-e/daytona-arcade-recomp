@@ -69,7 +69,17 @@ def run(plan, live):
                     if rows['frames'] > last_frame: last_frame = rows['frames']; last_advance = time.monotonic()
                     if rows['frames'] and time.monotonic() - last_advance > 5: raise RuntimeError('guest frame progression stopped')
                     if rows['frames'] and not rows['hardware']: raise RuntimeError('hardware renderer witness absent')
-                    if rows['phase'] == 'closing': closing(); break
+                    if rows['phase'] == 'closing':
+                        # The native window stays alive for its bounded cleanup handshake.
+                        # Finish an in-flight capture before acknowledging its disappearance.
+                        if capture is not None:
+                            capture.wait(timeout=8)
+                            if capture.returncode:raise RuntimeError('R2 capture helper failed at native EOF')
+                            capture_context['completedR1']=rows
+                            capture_context['completedUnixMs']=int(time.time()*1000)
+                            dump(f'capture-context-{capture_context["trigger"]}.json',capture_context)
+                            capture=None
+                        closing();break
                     next_burst = capture_at[len(bursts)] if len(bursts)<len(capture_at) else None
                     if next_burst is not None and rows['frames'] >= next_burst and capture is None and not supervisor.get('pending'):
                         # Enumerator itself is an owned child, never desktop capture or foreground activation.

@@ -48,7 +48,10 @@ reason is immutable. Cold adoption/pending states admit no script keys.
 Prepared scope is6000 frames (~104s native pacing), four <=2s/max3-image bursts
 after3500/3950/4400/5700, existing150s worker/190s job +45s cleanup bounds.
 Capture context retains R1 frame/time brackets; it is not an exact frame-to-PNG
-presentation witness. The final500 frames release pedals/buttons and centre
+presentation witness. An in-flight capture finishes (<=8s) before acknowledging
+the15s native closing handshake, so EOF does not remove its window mid-capture.
+The hidden-file fixture changes its owned file with OPEN_EXISTING, not a Windows
+CREATE_ALWAYS overwrite that can refuse a hidden target. The final500 frames release pedals/buttons and centre
 steering; selected gear persists as ordinary keyboard mapping does. Native stdout
 is now directed to the private log for readback, while JSONL/PNGs remain primary.
 

@@ -28,7 +28,9 @@ class Admission(unittest.TestCase):
             flags=hidden.stat().st_file_attributes
             self.assertTrue(kernel.SetFileAttributesW(str(hidden),flags|2))
             first=snapshot([tmp]);self.assertTrue(first[tmp]['files']['hidden.dat']['attributes']&2)
-            hidden.write_bytes(b'changed');self.assertNotEqual(snapshot([tmp]),first)
+            # OPEN_EXISTING: CREATE_ALWAYS can refuse an existing hidden Windows file.
+            with hidden.open('r+b') as stream:stream.write(b'changed');stream.truncate()
+            self.assertNotEqual(snapshot([tmp]),first)
             sparse=root/'sparse.bin';sparse.write_bytes(b'')
             kernel.DeviceIoControl.argtypes=[wt.HANDLE,wt.DWORD,wt.LPVOID,wt.DWORD,wt.LPVOID,wt.DWORD,ctypes.POINTER(wt.DWORD),wt.LPVOID]
             with sparse.open('r+b') as f:
