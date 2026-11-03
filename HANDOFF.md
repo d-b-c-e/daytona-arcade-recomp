@@ -26,9 +26,20 @@ until the existing observer resolves them, without inventing a new abort policy.
 Normal close also checks native SDL window class/owner/visibility. Preparation
 pins the baseline itself, and records compiled-source and runner-source commits
 separately so documentation updates do not invalidate unchanged binary identity.
-These corrections require the focused incremental build/rehearsal before live use.
-No game, hook, capture, input, owner/installed write or public push has occurred.
-Next: incremental CPU check, fresh pinned manifest, then one R1/R2 GO. Existing adoption
+Incremental CPU GO502929 passed at `ea8ed4b`: candidate
+`CF3BB506CB98C793D177DDB5EB15F05980781E820023CE1A64D88C9A20D83B5A`,
+26 production fake-SDL/private-state assertions, three reader/owner groups,
+1001 replacements/38245 reads/zero errors. Suspended root PID38784,
+birth639293157696844069 exited, full job empty/released; CPU lease
+`6f9d332a3607417b8c1f823b731c90b9` released and named receipt absent.
+Evidence: `build/readback-go502929.log`, `build/readback/rehearsal-go502929/`.
+
+The final preparation correction canonicalizes executable/helper paths before
+native-image comparison (including the toolkit junction), and pins the managed
+capture DLL/runtime dependencies as well as its executable host. This changes
+only preparation, not the compiled candidate. No game, hook, capture, input,
+owner/installed write or public push has occurred. Next: fresh pinned manifest,
+then one R1/R2 GO. Existing adoption
 rows STD-001–010 remain unchecked; only touched STD-035 scope is marked partial.
 
 Important findings: SDL_GetPrefPath uses the real Windows preference location;

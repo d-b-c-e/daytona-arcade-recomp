@@ -53,6 +53,8 @@ candidate/helper/ROM/runner pins and read-only owner snapshots. Send the concret
 prepared manifest SHA for one live GO. Then run `Invoke.ps1 -Attempt attempt-01
 -Go ID -PreparedSha256 SHA`. It requires 180 seconds of raw idle, a named lease
 and the qualified low-level observer. No hook, game or capture starts at prepare.
+Executable paths are canonicalized before comparison with native process image
+identity; the capture host, managed DLL and its runtime payload are all pinned.
 
 The supervisor admits only the exact owned game and bounded startup transitions;
 physical/injected input, unexplained raw resets, foreign foreground, stale
