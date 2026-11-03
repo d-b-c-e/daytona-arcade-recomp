@@ -33,6 +33,7 @@ const char *ForceFeedback::device_kind() const {
 }
 
 void ForceFeedback::open(SDL_Joystick *joy) {
+    if (muted_) return;
     joy_ = joy;
     if (!SDL_IsJoystickHaptic(joy) || !(haptic_ = SDL_OpenHapticFromJoystick(joy))) {
         // no haptics: rumble, if the device has it
@@ -73,6 +74,7 @@ void ForceFeedback::open(SDL_Joystick *joy) {
 }
 
 void ForceFeedback::close() {
+    if (muted_) return;
     if (haptic_) {
         SDL_StopHapticEffects(haptic_);
         SDL_CloseHaptic(haptic_);
@@ -87,6 +89,7 @@ void ForceFeedback::close() {
 
 void ForceFeedback::update(const std::vector<uint8_t> &commands, const Devices &devices, const Controls &controls,
                            float strength, bool invert) {
+    if (muted_) return;
     stopped_ = false;
     for (uint8_t c : commands) drive_.command(c);
     SDL_Joystick *j = strength > 0 ? steering_device(devices, controls) : nullptr;
@@ -98,6 +101,7 @@ void ForceFeedback::update(const std::vector<uint8_t> &commands, const Devices &
 }
 
 void ForceFeedback::stop() {
+    if (muted_) return;
     if (stopped_) return;
     stopped_ = true;
     drive_ = rt::DriveBoard{};
@@ -111,6 +115,7 @@ void ForceFeedback::stop() {
 }
 
 void ForceFeedback::apply(float strength, bool invert) {
+    if (muted_) return;
     if (!joy_) return;
     strength = std::clamp(strength, 0.0f, 1.0f);
     const float force = std::clamp(drive_.force * (invert ? -1.0f : 1.0f), -1.0f, 1.0f) * strength;

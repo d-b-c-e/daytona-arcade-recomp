@@ -18,6 +18,7 @@ namespace app {
 
 class ForceFeedback {
 public:
+    explicit ForceFeedback(bool muted = false) : muted_(muted) {}
     ~ForceFeedback() { close(); }
     // Each frame: the drive commands the game sent, the devices, the
     // settings (strength 0..1, 0 = off; invert the turning force).
@@ -29,6 +30,7 @@ public:
     const char *device_kind() const; // "wheel (force feedback)", "gamepad (rumble)" or "none", for the launcher
 
 private:
+    const bool muted_; // process-lifetime latch: never acquire a device when muted
     rt::DriveBoard drive_;
     SDL_Joystick *joy_ = nullptr; // the device the effects are on
     SDL_Haptic *haptic_ = nullptr;

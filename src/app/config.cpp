@@ -11,6 +11,7 @@
 namespace app {
 
 std::string Config::pref_dir() {
+    if (!pref_override.empty()) return pref_override;
     // per ROM set (and profile): settings, EEPROM, backup RAM
     const std::string app = profile.empty() ? std::string(M2_ROMSET) : std::string(M2_ROMSET) + "-" + profile;
     char *base = SDL_GetPrefPath("daytona-recomp", app.c_str());

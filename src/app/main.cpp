@@ -20,6 +20,7 @@
 #include "app/gpu/gpu_renderer.h"
 #include "app/launcher.h"
 #include "app/native_audio.h"
+#include "app/readback.h"
 #include "runtime/native_sound_engine.h"
 #include "runtime/game_loop.h"
 #include "runtime/rom_import.h"
@@ -41,6 +42,7 @@
 #include <utility>
 #include <cstdio>
 #include <cstring>
+#include <cstdlib>
 #include <fstream>
 #include <iterator>
 #include <memory>
@@ -170,6 +172,29 @@ void open_log() {
 }
 
 int main(int argc, char **argv) {
+    app::Readback readback;
+    const char *mute_env = std::getenv("DBCE_FFB_MUTE");
+    const bool environment_mute = mute_env && !std::strcmp(mute_env, "1");
+    try {
+        for (int i = 1; i < argc; ++i) {
+            const std::string arg = argv[i];
+            if (arg == "--readback-state" || arg == "--readback-session") {
+                if (i + 1 == argc) throw std::runtime_error("missing readback value");
+                auto &value = arg == "--readback-state" ? readback.dir : readback.session;
+                if (!value.empty()) throw std::runtime_error("duplicate readback option");
+                value = argv[++i];
+            }
+        }
+        if (readback || !readback.session.empty()) {
+            for (int i = 1; i + 1 < argc; ++i)
+                if (!std::strcmp(argv[i], "--frames")) readback.frames = app::Readback::budget(argv[++i]);
+            readback.validate(environment_mute);
+            app::Config::pref_override = readback.dir;
+        }
+    } catch (const std::exception &e) {
+        std::fprintf(stderr, "daytona: %s\n", e.what());
+        return 2; // before logging or touching the real SDL pref path
+    }
     for (int i = 1; i + 1 < argc; i++) // before anything reads or writes the data folder
         if (!std::strcmp(argv[i], "--profile")) app::Config::profile = argv[i + 1];
     open_log();
@@ -191,16 +216,28 @@ int main(int argc, char **argv) {
         else if (!std::strcmp(argv[i], "--fullscreen")) cfg.fullscreen = true;
         else if (!std::strcmp(argv[i], "--autostart")) autostart = true;
         else if (!std::strcmp(argv[i], "--profile") && i + 1 < argc) ++i; // read above
+        else if ((!std::strcmp(argv[i], "--readback-state") || !std::strcmp(argv[i], "--readback-session")) && i + 1 < argc) ++i;
+    }
+    if (readback) {
+        cfg.fullscreen = false;
+        cfg.renderer = "hardware";
+        cfg.link = false;
+        cfg.native_audio = false;
+        cfg.mute = true;
+        autostart = true;
+        max_frames = readback.frames;
+        readback.write("starting", 0, 0, false);
     }
 
     // the name graphics overlays and drivers see (patches/sdl3: Vulkan's application name)
     SDL_SetAppMetadata("Daytona USA", nullptr, "daytona-recomp");
     if (!cfg.gpu.empty()) SDL_SetHint(SDL_HINT_GPU_DRIVER, cfg.gpu.c_str());
-    if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD)) return fail("SDL_Init");
-    if (!SDL_InitSubSystem(SDL_INIT_HAPTIC)) std::fprintf(stderr, "daytona: no force feedback (%s)\n", SDL_GetError());
+    if (!SDL_Init(SDL_INIT_VIDEO | (readback ? 0 : SDL_INIT_GAMEPAD))) return fail("SDL_Init");
+    const bool force_muted = environment_mute || bool(readback);
+    if (!force_muted && !SDL_InitSubSystem(SDL_INIT_HAPTIC)) std::fprintf(stderr, "daytona: no force feedback (%s)\n", SDL_GetError());
     Audio audio;
     app::NativeAudio<snd::NativeSoundEngine> native_audio;
-    const bool audio_initialized = SDL_InitSubSystem(SDL_INIT_AUDIO);
+    const bool audio_initialized = !readback && SDL_InitSubSystem(SDL_INIT_AUDIO);
     bool have_audio = false, native_active = false, native_fault = false;
     if (audio_initialized) std::printf("daytona: audio driver %s\n", SDL_GetCurrentAudioDriver());
     else std::fprintf(stderr, "daytona: no audio output (%s)\n", SDL_GetError());
@@ -241,6 +278,7 @@ int main(int argc, char **argv) {
     app::GpuRenderer gpu;
     if (!gpu.init(dev, SDL_GPU_TEXTUREFORMAT_B8G8R8A8_UNORM))
         std::fprintf(stderr, "daytona: hardware renderer unavailable: %s\n", gpu.error().c_str());
+    if (readback && !gpu.ok()) return fail("readback requires hardware renderer");
 
     SDL_GPUTextureCreateInfo ti{};
     ti.type = SDL_GPU_TEXTURETYPE_2D;
@@ -266,7 +304,7 @@ int main(int argc, char **argv) {
     int shown_scale = 1;
 
     app::Launcher launcher(cfg, window);
-    app::ForceFeedback ffb; // the drive board on the steering device
+    app::ForceFeedback ffb(force_muted); // immutable no-force latch before any device acquisition
     std::unique_ptr<app::TcpLink> link; // link play (declared first: outlives the game, which holds it)
     std::unique_ptr<rt::GameLoop> game;
     const std::string eeprom_path = pref_file("ioboard_eeprom.bin"), backup_path = pref_file("backup_ram.bin");
@@ -327,6 +365,7 @@ int main(int argc, char **argv) {
     // Skip launcher (saved) or --autostart: straight into the game when the ROM
     // set checks out; otherwise the launcher shows, with the reason.
     if ((autostart || cfg.skip_launcher) && launcher.rom_ok() && start_game()) in_launcher = false;
+    if (readback && in_launcher) return fail("readback could not start verified ROM set");
     auto sync_native_audio = [&] {
         if (native_fault) in_launcher = true;
         if (!native_audio.available()) return;
@@ -344,12 +383,14 @@ int main(int argc, char **argv) {
     uint64_t last = SDL_GetTicksNS();
     double pending = 0;
     const double frame_ns = 1e9 / kArcadeHz;
+    uint64_t presents = 0, reported_frame = 0;
 
     while (running) {
         SDL_Event e;
         while (SDL_PollEvent(&e)) {
-            devices.handle_event(e);
+            if (!readback) devices.handle_event(e);
             if (e.type == SDL_EVENT_QUIT) running = false;
+            else if (readback) continue; // no keyboard/mouse/gamepad commands in neutral attract diagnostic
             else if (e.type == SDL_EVENT_KEY_DOWN && e.key.scancode == SDL_SCANCODE_F11) {
                 cfg.fullscreen = !(SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN);
                 SDL_SetWindowFullscreen(window, cfg.fullscreen);
@@ -396,7 +437,7 @@ int main(int argc, char **argv) {
             game->set_stretch_backdrop(cfg.stretch_backdrop);
             rt::GameLoop::set_draw_distance(cfg.draw_distance);
             while (pending >= frame_ns) {
-                game->run_frame(cfg.controls.sample(SDL_GetKeyboardState(nullptr), devices));
+                game->run_frame(readback ? rt::Inputs{} : cfg.controls.sample(SDL_GetKeyboardState(nullptr), devices));
                 if (native_active) {
                     const auto bytes = game->board().take_sound_bytes();
                     if (!native_audio.send(bytes.data(), bytes.size())) {
@@ -408,7 +449,10 @@ int main(int argc, char **argv) {
                 }
                 pending -= frame_ns;
                 new_frame = have_frame = true;
-                if (max_frames && game->frames() >= max_frames) running = false;
+                if (max_frames && game->frames() >= max_frames) {
+                    running = false;
+                    if (readback) break;
+                }
             }
             // the drive board's commands this frame, as force feedback
             ffb.update(std::exchange(game->board().io().drive_commands, {}), devices, cfg.controls, cfg.ffb_strength,
@@ -533,6 +577,19 @@ int main(int argc, char **argv) {
             }
         }
         SDL_SubmitGPUCommandBuffer(cmd);
+        if (swap) ++presents;
+        if (readback && game && game->frames() >= reported_frame + 30) {
+            reported_frame = game->frames();
+            readback.write("running", game->frames(), presents, cfg.renderer == "hardware" && gpu.ok());
+        }
+    }
+
+    if (readback) {
+        readback.write("closing", game ? game->frames() : 0, presents, gpu.ok());
+        // Parent moves its foreground guard into cleanup before the game window disappears.
+        const auto deadline = SDL_GetTicks() + 15000;
+        while (!std::filesystem::exists(readback.dir + "cleanup.ok") && SDL_GetTicks() < deadline) SDL_Delay(20);
+        if (!std::filesystem::exists(readback.dir + "cleanup.ok")) return fail("readback cleanup handshake timed out");
     }
 
     save_nv();
@@ -560,5 +617,6 @@ int main(int argc, char **argv) {
     ffb.close();
     devices.close_all();
     SDL_Quit();
+    if (readback) readback.write("complete", game ? game->frames() : 0, presents, reported_hardware == 1);
     return 0;
 }

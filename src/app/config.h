@@ -43,6 +43,7 @@ struct Config {
     // --profile NAME: a separate data folder (settings, EEPROM, backup RAM),
     // e.g. a second cabinet on the same computer for link play.
     static inline std::string profile;
+    static inline std::string pref_override; // explicit readback state, set before logging/load
     static std::string pref_dir(); // where this set's (and profile's) data lives, with a trailing separator
     void load();
     void save() const;

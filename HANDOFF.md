@@ -1,5 +1,27 @@
 # Handoff
 
+# Private neutral attract readback — 2026-11-03
+
+Source-only candidate adds an explicit private preference directory before SDL
+logging/config access, neutral board-input attract mode, immutable force-output
+mute and an independent `DBCE_FFB_MUTE=1` interlock. Ordinary player defaults and
+saved strengths remain intact. The native hardware renderer path is observed by
+flushed session/frame/present records and two planned exact-window capture bursts.
+See [the runner](tools/readback/README.md) for commands, bounds, owner protection,
+actual job/low-level observer dependencies and remaining evidence gates.
+
+Current state: implementation and inert tests prepared; no build, fixture run,
+game, hook, lease, installed-file write or public push in this increment. Next:
+one coordinated CPU configure/build/rehearsal slot, pin clean candidate, prepare
+fresh manifest, then one coordinated R1/R2 neutral-attract run. Existing adoption
+rows STD-001–010 remain unchecked; only touched STD-035 scope is marked partial.
+
+Important findings: SDL_GetPrefPath uses the real Windows preference location;
+changing only the child APPDATA environment is not a proven redirect. Its explicit
+early override is required. The pre-existing app-controls suite attaches virtual
+SDL joysticks and must not be included in this no-device R0 run. Retained generated
+daytona93 C++ is cache input, not a new ROM recompilation/parity qualification.
+
 ## Current state
 
 **Vita build: the ROM set.** The 1994 set's M2_ROMSET broke the Vita compile

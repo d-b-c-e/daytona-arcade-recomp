@@ -319,6 +319,10 @@ add_test(NAME comm_board COMMAND test_comm_board)
 
 # Wheel and pedal bindings against SDL virtual joysticks.
 if(TARGET SDL3::SDL3-static)
+    add_executable(test_readback tests/test_readback.cpp src/app/ffb.cpp)
+    target_include_directories(test_readback PRIVATE src extern/sdl3/include)
+    target_link_libraries(test_readback PRIVATE softfloat)
+    add_test(NAME readback COMMAND test_readback)
     add_executable(test_app_controls tests/test_app_controls.cpp src/app/controls.cpp src/app/ffb.cpp)
     target_include_directories(test_app_controls PRIVATE src)
     target_link_libraries(test_app_controls PRIVATE runtime SDL3::SDL3-static)
