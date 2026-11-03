@@ -2,9 +2,36 @@
 
 ## Ordinary control-consumer milestone — request503490
 
-Current work has passed CPU/R0, not a new runtime pass. The earlier
+**Current result: ordinary control delivery and sampled player-race response
+PASS, GO503981 attempt-03.** The earlier
 neutral-attract PASS and exact CF3BB506/a7edd8fa payload remain retained below and
-in `build/readback/attempt-02/frozen-payload/`. CPU GO503880 built clean0e65386
+in `build/readback/attempt-02/frozen-payload/`. Runtime0e65386, frozen runner8c5d1c8,
+prepared manifest99EC3AC023AAC5003DFE60DE404E44D63DB3171F617DC185168CE7992AB638AC,
+candidateAE93D5F4CC9EFF13C9EE54D4048671D5D0E9E552D661DC1DF0B74C7AB56ECAA2.
+
+| Result | Evidence / boundary |
+|---|---|
+| R1 delivery |6000 contiguous control rows,25 assertions passed; source-attributed consumed observations5782/5782/5782/5992/5782 across steer/accel/brake/IN0/IN1. Actual sampler -> GameLoop -> masked CPU reads -> raw/filtered ADC and digital cache matched; coin/start/select, left/right/release, pedals/release and independent1/2/3/2/3/4 input-gear expectations passed. |
+| Native game / R2 |6000 guest frames,202 status records,18677 successful swap submissions, native exit0; Direct3D12/hardware logged privately. Game42684/birth639293229825041716, HWND26283264/SDL_app matched all four captures. All12 whole-window994x800 PNGs reviewed/hash-checked;11 distinct hashes because one3500 sample repeats a displayed frame. |
+| Correlated visible response | Player race (lap1/8, position40/40), HUD138km/h/gear3 before braking (R1 bracket3510–3540),0/gear2 during brake (3960–3990),67/gear3 after acceleration resumes (4411–4441),65/gear4 with pedals released/coasting (5701–5731). Capture spans0.1319/0.1349/0.1600/0.1471s; brackets are not an exact presentation-frame match. |
+| Limits | Fixed input script contacts walls and produces wrong-way warnings. Input delivery and visible pedal/speed/gear-display response passed; handling, clean steering dynamics, stopping distance, physical wheel/pedals/shifter/FFB, real keys, triples and owner acceptance are unqualified. Speed/pose/engaged-transmission RAM fields remain unbound; HUD evidence is separate. |
+| Custody / owner | Fresh raw idle6101.797s; lease8bbffd7760ea473384176bddae6fece8 held17:16:22–17:18:08Z (~106.3s). Six owner files plus directories exact SHA/length/numeric creation/write UTCticks/attrs/presence; before/after inventory hash00439F981CFBB53B7F29370688F7FD21E3DA59BDB36881EB83CC41075E87EE04. Display and prelaunch foreground unchanged; physical0/injected0/rawresets0/abortnull; observer unhooked/joined, full terminal job[], named receipt/shared slot absent, lease released. No force/global/virtual/physical input, network, Steam, install or public push. |
+
+Primary evidence: `build/readback/attempt-03/{prepared,qualification}.json`,
+`controller.txt`, `live/{result,worker-result,controls-result,game,guard,job-after,
+owner-before,owner-after}.json`, `live/job-census.jsonl`,
+`live/state/{controls.txt,controls.jsonl,readback.jsonl,daytona.log}`, and four
+`live/capture-{3500,3950,4400,5700}/` folders plus their capture-context JSON.
+All24 exact approved binary/runner/native+managed helper files are retained in
+`attempt-03/frozen-payload/archive.json`; protected ROM/system/Python identities
+remain in the prepared manifest. No new run or active custody remains.
+
+This bounded assignment is complete. Preserve both qualified payloads. Any next
+work must distinguish physical SDL acquisition/profile/feel from this software
+key-provider route; a clean driving/heading workload needs a separately scoped
+state/trajectory measurement, not a claim from the current wall-contact images.
+
+CPU GO503880 built clean0e65386
 (C++ unchanged from approvedcd155606), candidate
 `AE93D5F4CC9EFF13C9EE54D4048671D5D0E9E552D661DC1DF0B74C7AB56ECAA2`.
 26 force/private assertions,74 actual consumer/guard/masked-I/O assertions,
@@ -16,8 +43,8 @@ full rehearsal job empty/released. Named CPU lease
 `build/readback-go503880.log`, `build/readback/rehearsal-go503880/` and build receipt.
 Compiler/test commands exited0. An MSBuild nodeReuse service PID38760 remained
 afterward, with image/birth/command recorded in `build/readback/compiler-node*-go503880.json`;
-it was not terminated or treated as a live compiler command. No guest execution,
-game, hook, device or capture has started for this milestone.
+it was not terminated or treated as a live compiler command. CPU/R0 itself ran no
+guest instructions, game, hook, device or capture; later runtime is recorded above.
 
 The diagnostic's finite private key-state array now enters the **existing
 Controls::sample** with empty Devices, then the ordinary graphical GameLoop.
@@ -77,8 +104,8 @@ hidden-file inventory and an actual owned-file FSCTL sparse mark/refusal. This
 route does not copy/restore owner files or relabel sparse attributes; sparse owner
 files require an extent-aware verifier and are refused before admission.
 
-Next: freeze a fresh Controls manifest and request ONE live GO. No new runtime
-claim exists. STD001–010 remain unchecked; touched034/035/043 portions are partial,
+The one Controls run passed as recorded above. STD001–010 remain unchecked;
+touched034/035/043 portions are partial,
 not a complete profile/physical adoption. Public origin remains local-only.
 
 # Private neutral attract readback — 2026-11-03

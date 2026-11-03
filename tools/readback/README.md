@@ -1,11 +1,23 @@
 # Neutral attract readback
 
-## Ordinary control case (implementation, not qualified yet)
+## Ordinary control case (qualified software route)
 
 CPU/R0 GO503880 passed at0e65386: candidateAE93D5F4CC9EFF13C9EE54D4048671D5D0E9E552D661DC1DF0B74C7AB56ECAA2;
 26 force/private assertions,74 actual consumer/guard/MMIO assertions, five Python
 groups and the full C++ reader/job rehearsal (1001 replacements/72891 reads/0errors).
-No guest instructions, SDL calls, game, hook or hardware input. Runtime remains pending.
+CPU/R0 ran no guest instructions, SDL calls, game, hook or hardware input.
+
+Runtime GO503981 attempt-03 then passed6000 frames/native exit0 and25 actual
+guest-consumption assertions. Twelve reviewed994x800 whole-window PNGs show a
+player race: HUD138km/h/gear3 before braking,0/gear2 during braking,67/gear3 after
+acceleration resumes,65/gear4 while released/coasting. Source/frame/time brackets
+and exact PID/birth/HWND agree with the native/capture receipts. One image is a
+repeated displayed frame, so there are11 distinct hashes. The fixed workload hits
+walls and wrong-way warnings: it is not clean handling/steering validation.
+Speed/pose/engaged-transmission memory fields, physical controls/FFB, real-key
+reachability, triples and owner acceptance remain unqualified. Full owner/display
+verification, terminal empty job, observer join and lease release passed.
+See `build/readback/attempt-03/qualification.json` and the24-file frozen payload.
 
 `Prepare.ps1 -Attempt attempt-NN -Case Controls` selects the finite6000-frame
 `control-program.txt`; Neutral retains the earlier1800-frame case. The worker
