@@ -1,5 +1,9 @@
 # Native audio backend (experimental)
 
+For the separate private Windows readback path, see
+[diagnostic audio and mute evidence](2026-11-03-audio-mute-evidence.md), including
+the source guards, pinned candidates and physical-silence limitation.
+
 The shared C++ backend in `src/runtime/native_sound_*` and
 `native_sample_mixer.*` is used by the desktop (Linux, macOS, Windows) and
 native GXM Vita frontends. It decodes the supplied Daytona93 music/command

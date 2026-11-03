@@ -18,6 +18,7 @@ Seeded 2026-10-04 from what was verified that day; `unchecked` rows need a look.
 | STD-008 | Display changes: game applies once | unchecked |  |
 | STD-009 | Dashboard telemetry matches the HUD | unchecked |  |
 | STD-010 | Install the latest build for testing | unchecked |  |
+| STD-011 | Work lands on main | partial | Qualified native/harness history a2c0ec9 landed on local main; the audio evidence companion is docs-only. Retained remi runtime/evidence worktree remains necessary; no public push or installed-state upgrade. |
 | STD-034 | Closed-loop observation and session control | partial | Private-key ordinary consumer uses per-frame nonce/expiry/fresh parent admission and guest-poll/cache correlation;74 R0 assertions and25 runtime consumption checks + correlated player-race HUD passed GO503981. No Rig Profile Apply writer or physical qualification. |
 | STD-035 | Profile writers and test isolation | partial | Explicit private state and independent environment no-force latch; neutral-attract GO503291 and finite ordinary-key delivery GO503981 passed with exact owner verification. Terminal guard/late-read/nonce/expiry + C++ shared-delete reader R0 passed. No profile writer, physical device injection or physical acceptance claimed. |
 | STD-043 | Held direct gear wins | partial | Production sampler prioritizes a held direct gate over simultaneous sequential shift; actual inert consumer regression passed CPU503880, including ignored-shift edge/release. No physical gearbox acceptance. |
