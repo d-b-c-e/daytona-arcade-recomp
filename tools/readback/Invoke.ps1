@@ -2,6 +2,7 @@ param([Parameter(Mandatory)][ValidatePattern('^attempt-[0-9]{2}$')][string]$Atte
  [Parameter(Mandatory)][string]$Go,[Parameter(Mandatory)][ValidatePattern('^[A-Fa-f0-9]{64}$')][string]$PreparedSha256)
 $ErrorActionPreference='Stop'
 $root=(Resolve-Path "$PSScriptRoot/../..").Path
+. "$PSScriptRoot/JobPolicy.ps1"
 $out=Join-Path $root "build/readback/$Attempt"
 function Pin([string]$Path,[string]$Hash){if((Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash -ine $Hash){throw "Pin mismatch: $Path"}}
 Pin "$out/prepared.json" $PreparedSha256
@@ -13,6 +14,14 @@ $live=(New-Item -ItemType Directory "$out/live").FullName
 $stateFile=Join-Path $live 'supervisor.json'
 $lease=$false;$observer=$false;$cleanup=$false;$launched=$false;$adopted=$false;$quiescent=$true;$restored=$false;$failure=$null
 $identity=$null;$display=$null;$oldMute=$env:DBCE_FFB_MUTE
+$lastCensus=''
+function Census([object[]]$Rows){
+ if($null -eq $Rows){$Rows=@()}
+ $signature=($Rows|Sort-Object pid|ForEach-Object{"$($_.pid):$($_.birth):$($_.image)"}) -join '|'
+ if($signature -ceq $script:lastCensus){return};$script:lastCensus=$signature
+ $line=@{unixMs=[DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds();identities=$Rows}|ConvertTo-Json -Depth 5 -Compress
+ Add-Content "$live/job-census.jsonl" $line -Encoding utf8NoBOM
+}
 function State([bool]$Ok){
  @{unix=[DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()/1000.0;ok=$Ok;pending=($observer -and [Dirt4Readback.Observer]::Pending);cleanup=$cleanup}|ConvertTo-Json -Compress|Set-Content "$stateFile.tmp" -Encoding utf8NoBOM
  [DaytonaSnapshot]::Publish("$stateFile.tmp",$stateFile)
@@ -54,18 +63,22 @@ try {
   if(-not $cleanup){[Dirt4Readback.Observer]::AssertHealthy()}
   if([TruckfulLive]::DisplayIdentity() -cne $display){throw 'Display topology/mode drift'}
   $ids=@([TruckfulLive]::JobPids())
-  foreach($childId in $ids){
-   try{$i=[TruckfulLive]::ProcessIdentity($childId)}catch{if(Get-Process -Id $childId -ErrorAction SilentlyContinue){throw};continue}
-   if($i.image -ieq $plan.candidate){
+  $rows=@(foreach($childId in $ids){
+   try{$i=[TruckfulLive]::ProcessIdentity($childId);[pscustomobject]@{pid=$i.pid;birth=$i.birth;image=$i.image;role=(Get-OwnedJobRole $i $rootIdentity $plan)}}catch{if(Get-Process -Id $childId -ErrorAction SilentlyContinue){throw}}
+  })
+  Census $rows # retain exact unexpected identities before a terminal admission refusal
+  foreach($i in $rows){
+   if($i.role -eq 'game'){
     if(-not $adopted){$identity=$i;[Dirt4Readback.Observer]::Adopt($i.pid,$i.birth);$adopted=$true;$i|ConvertTo-Json|Set-Content "$live/game.json"}
     elseif($i.pid -ne $identity.pid -or $i.birth -ne $identity.birth){throw 'Game identity replaced or duplicated'}
-   }elseif($i.image -ine $plan.python -and $i.image -ine $plan.capture){throw "Unexpected owned-job image: $($i.image)"}
+   }elseif($i.role -notin @('root','capture','console-host')){throw "Unexpected owned-job identity: $($i|ConvertTo-Json -Compress)"}
   }
   State $true
   if($clock.Elapsed.TotalSeconds -gt 190){throw 'Own-job total deadline exceeded'}
   Start-Sleep -Milliseconds 100
  }
  $quiescent=$true
+ Census @()
  if(-not $adopted){throw 'No exact game adopted'}
  $receipt=Get-Content "$live/worker-result.json" -Raw|ConvertFrom-Json
  if($receipt.result -ne 'pass'){throw "R1/R2 worker failed: $($receipt.failure)"}
@@ -82,6 +95,7 @@ finally {
    $quiescent=@([TruckfulLive]::JobPids()).Count -eq 0
   }
   if($quiescent){
+   ConvertTo-Json -InputObject @([TruckfulLive]::JobPids())|Set-Content "$live/job-after.json"
    try{
     VerifyOwner "$live/owner-before.json" "$live/owner-after.json"
     if([TruckfulLive]::DisplayIdentity() -cne $display){throw 'Final display identity drift'}

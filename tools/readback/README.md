@@ -65,6 +65,14 @@ SHA256, byte length, exact numeric creation/write UTC ticks and attributes for t
 installed game and real `%APPDATA%/daytona-recomp/daytona93` tree. No restoration
 write is planned: the game uses a fresh private pref tree. Unexpected drift or
 unresolved cleanup retains controller/job/lease custody; no forced retry follows.
+Windows may create a hidden console host even for a `CREATE_NO_WINDOW` console
+root. It is admitted only by the pinned System32 path, membership in this fresh
+private job, and creation in the root's epoch. This does not adopt another
+console or authorize an outside process. Every observed job identity is retained
+before classification failure. The inert rehearsal uses this same classifier,
+records actual host command/parent metadata, and checks wrong-image/old-epoch
+and additional-Python refusal cases. Earlier root-only membership rehearsals did
+not test the live image gate; attempt-01 exposed that gap before game launch.
 
 Impact: one visible 992x768 window, ordinary foreground transition only, no input
 injection, no physical devices, no audio, no display change; native CPU/GPU load

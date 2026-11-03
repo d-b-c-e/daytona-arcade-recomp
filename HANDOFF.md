@@ -37,9 +37,42 @@ Evidence: `build/readback-go502929.log`, `build/readback/rehearsal-go502929/`.
 The final preparation correction canonicalizes executable/helper paths before
 native-image comparison (including the toolkit junction), and pins the managed
 capture DLL/runtime dependencies as well as its executable host. This changes
-only preparation, not the compiled candidate. No game, hook, capture, input,
-owner/installed write or public push has occurred. Next: fresh pinned manifest,
-then one R1/R2 GO. Existing adoption
+only preparation, not the compiled candidate. Prepared attempt-01 SHA
+`0ED843BC7A1F57EF159E7585032946039BB7354F49B43C798E44606DA29C910E`.
+
+GO502996 refused raw idle below 180 seconds before any lease/hook/root/game.
+The preceding Revo run's startup resets still needed fresh idle regrowth; serial
+lease release does not satisfy this gate. Refusal evidence is retained separately
+in `build/readback/attempt-01/{controller.txt,admission.json,pre-admission-go502996/}`.
+Independent owner verification after that refusal matched the pinned baseline.
+
+Fresh GO503045 passed measured raw idle183.531 seconds and acquired lease
+`ef7a98670deb451aac2239b9e689d36a`. Root Python PID34888,
+birth639293162972403489 entered the suspended-root job. The controller rejected
+`C:\Windows\System32\conhost.exe` as an unlisted job image. Its terminal stop
+reached the worker's initial supervisor gate before any game Popen: gameExit null,
+no frame records, no game adoption and no captures. This is a runner admission
+failure, not a native game or renderer result. Unknown host PID/birth was not
+retained by the original narrow census; do not invent its ancestry from the name.
+
+Cleanup completed: full job empty, owner before/after hashes both
+`00439F981CFBB53B7F29370688F7FD21E3DA59BDB36881EB83CC41075E87EE04`,
+all six installed/profile files and directories matched numeric UTC ticks,
+attributes, presence and SHA; display unchanged; low-level physical0/injected0,
+raw resets0, abortReason null, hooks released/thread stopped. Lease and named
+receipt absent; no custody. Evidence: `build/readback/attempt-01/live/` and
+`controller-go503045.txt`. No retry or game launch under that GO.
+
+Offline correction in progress: classify only a pinned System32 console host
+already inside the fresh private job and born in that root's epoch. Persist every
+PID/birth/image/role before admission rejection, plus the empty terminal census.
+The original rehearsal only checked root membership and job emptiness, so missed
+the stricter live image gate. Extend the actual rehearsal to run that production
+classifier against every observed job member and retain console command/parent
+metadata, with negative wrong-image/old-epoch/additional-Python cases. The runtime
+binary and its 26 passing force/private-state assertions are unchanged. Live R1/R2
+still needs a separately coordinated frozen runner after that focused rehearsal.
+No owner/installed write or public push. Existing adoption
 rows STD-001–010 remain unchecked; only touched STD-035 scope is marked partial.
 
 Important findings: SDL_GetPrefPath uses the real Windows preference location;
