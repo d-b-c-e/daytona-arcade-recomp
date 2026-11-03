@@ -29,6 +29,10 @@ Primary evidence: `build/readback/attempt-02/{prepared,qualification}.json`,
 owner-before,owner-after}.json` (census is JSONL), plus
 `live/capture-{600,1200}/{capture.json,frame-0001.png,frame-0002.png,frame-0003.png}`.
 Private settings/EEPROM/backup RAM were written only under `live/state/`.
+Exact passing candidate, approved runner bytes and native/managed capture helper
+payload are frozen in `build/readback/attempt-02/frozen-payload/` (22 files,
+`archive.json` records original paths and SHA identities). This preserves the
+approved bytes independently of later documentation or build changes.
 No private daytona.log was produced and game-stdout.txt is empty; JSONL and PNGs
 are the retained witnesses. The specific SDL GPU backend name is not established.
 No public push, install, owner settings write or further game launch.
