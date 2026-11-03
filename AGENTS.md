@@ -10,6 +10,8 @@ adopt one (or find it does not apply), update `TOOLKIT-ADOPTION.md` in the same
 commit. When you set a new family-wide standard, append it to the toolkit ledger
 and commit it in the same turn; do not leave it only in an uncommitted file.
 
+Desktop routes (2026-11-03): follow the [route ladder](../../dbce-project-mgmt/skills/automated-testing/references/desktop-routes.md) and run `pwsh E:\Source\dbce-project-mgmt\tools\Test-DesktopRoutes.ps1`; if a route is down, continue on the next route within existing authorization and game safeguards.
+
 <!-- BEGIN project-file-location -->
 ## Project files and temporary work
 
