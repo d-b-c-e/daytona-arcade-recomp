@@ -2,6 +2,11 @@
 
 ## Ordinary control case (implementation, not qualified yet)
 
+CPU/R0 GO503880 passed at0e65386: candidateAE93D5F4CC9EFF13C9EE54D4048671D5D0E9E552D661DC1DF0B74C7AB56ECAA2;
+26 force/private assertions,74 actual consumer/guard/MMIO assertions, five Python
+groups and the full C++ reader/job rehearsal (1001 replacements/72891 reads/0errors).
+No guest instructions, SDL calls, game, hook or hardware input. Runtime remains pending.
+
 `Prepare.ps1 -Attempt attempt-NN -Case Controls` selects the finite6000-frame
 `control-program.txt`; Neutral retains the earlier1800-frame case. The worker
 creates a private controls.txt with one nonce/expiry/header and immutable commands.

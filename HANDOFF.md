@@ -2,10 +2,22 @@
 
 ## Ordinary control-consumer milestone — request503490
 
-Current work is offline implementation, not a new runtime pass. The earlier
+Current work has passed CPU/R0, not a new runtime pass. The earlier
 neutral-attract PASS and exact CF3BB506/a7edd8fa payload remain retained below and
-in `build/readback/attempt-02/frozen-payload/`. No build, guest execution, hook,
-device, capture or lease has started for this milestone yet.
+in `build/readback/attempt-02/frozen-payload/`. CPU GO503880 built clean0e65386
+(C++ unchanged from approvedcd155606), candidate
+`AE93D5F4CC9EFF13C9EE54D4048671D5D0E9E552D661DC1DF0B74C7AB56ECAA2`.
+26 force/private assertions,74 actual consumer/guard/masked-I/O assertions,
+five Python groups and six job-policy cases passed. The actual C++ reader parsed
+72891 shared snapshots during1001 native replacements with zero errors; root
+34988/birth639293221713888147 and conhost34620/birth639293221713939200 exited,
+full rehearsal job empty/released. Named CPU lease
+`ad5abeb1652f4b958f26924d57b3962f` released; slot/receipt absent. Evidence:
+`build/readback-go503880.log`, `build/readback/rehearsal-go503880/` and build receipt.
+Compiler/test commands exited0. An MSBuild nodeReuse service PID38760 remained
+afterward, with image/birth/command recorded in `build/readback/compiler-node*-go503880.json`;
+it was not terminated or treated as a live compiler command. No guest execution,
+game, hook, device or capture has started for this milestone.
 
 The diagnostic's finite private key-state array now enters the **existing
 Controls::sample** with empty Devices, then the ordinary graphical GameLoop.
@@ -55,7 +67,7 @@ CREATE_ALWAYS overwrite that can refuse a hidden target. The final500 frames rel
 steering; selected gear persists as ordinary keyboard mapping does. Native stdout
 is now directed to the private log for readback, while JSONL/PNGs remain primary.
 
-New R0 target links actual Controls and M2Board I/O to **inert SDL stubs**, with
+The passing R0 target links actual Controls and M2Board I/O to **inert SDL stubs**, with
 a TGP stub that aborts if any guest execution is attempted. It covers the full
 6000-frame private program, mapping/edge/held-gate rules, malformed/replay/expiry/
 late guards, per-byte lane counters and observer non-interference. The actual C++
@@ -65,8 +77,7 @@ hidden-file inventory and an actual owned-file FSCTL sparse mark/refusal. This
 route does not copy/restore owner files or relabel sparse attributes; sparse owner
 files require an extent-aware verifier and are refused before admission.
 
-Next: static review, one coordinated max2-worker CPU build/inert suite/rehearsal,
-then freeze a fresh Controls manifest and request ONE live GO. No new runtime
+Next: freeze a fresh Controls manifest and request ONE live GO. No new runtime
 claim exists. STD001–010 remain unchecked; touched034/035/043 portions are partial,
 not a complete profile/physical adoption. Public origin remains local-only.
 

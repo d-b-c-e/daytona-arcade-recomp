@@ -18,6 +18,6 @@ Seeded 2026-10-04 from what was verified that day; `unchecked` rows need a look.
 | STD-008 | Display changes: game applies once | unchecked |  |
 | STD-009 | Dashboard telemetry matches the HUD | unchecked |  |
 | STD-010 | Install the latest build for testing | unchecked |  |
-| STD-034 | Closed-loop observation and session control | partial | New private-key ordinary consumer program uses per-frame nonce/expiry/fresh parent admission and guest-poll/cache correlation; implementation/R0 pending. No Rig Profile Apply writer or physical qualification. |
+| STD-034 | Closed-loop observation and session control | partial | Private-key ordinary consumer uses per-frame nonce/expiry/fresh parent admission and guest-poll/cache correlation;74 actual consumer/guard/MMIO assertions passed CPU503880. Runtime controls pending; no Rig Profile Apply writer or physical qualification. |
 | STD-035 | Profile writers and test isolation | partial | Explicit private state and independent environment no-force latch;26 fake-SDL/private assertions and neutral-attract R1/R2 + exact owner verification passed GO503291. No profile writer, physical device injection or physical acceptance claimed. |
-| STD-043 | Held direct gear wins | partial | Production sampler prioritizes a held direct gate over simultaneous sequential shift; new inert consumer regression added, execution pending. No physical gearbox acceptance. |
+| STD-043 | Held direct gear wins | partial | Production sampler prioritizes a held direct gate over simultaneous sequential shift; actual inert consumer regression passed CPU503880, including ignored-shift edge/release. No physical gearbox acceptance. |
