@@ -63,15 +63,25 @@ raw resets0, abortReason null, hooks released/thread stopped. Lease and named
 receipt absent; no custody. Evidence: `build/readback/attempt-01/live/` and
 `controller-go503045.txt`. No retry or game launch under that GO.
 
-Offline correction in progress: classify only a pinned System32 console host
+Offline correction `cbf0410`: classify only a pinned System32 console host
 already inside the fresh private job and born in that root's epoch. Persist every
 PID/birth/image/role before admission rejection, plus the empty terminal census.
 The original rehearsal only checked root membership and job emptiness, so missed
-the stricter live image gate. Extend the actual rehearsal to run that production
-classifier against every observed job member and retain console command/parent
-metadata, with negative wrong-image/old-epoch/additional-Python cases. The runtime
-binary and its 26 passing force/private-state assertions are unchanged. Live R1/R2
-still needs a separately coordinated frozen runner after that focused rehearsal.
+the stricter live image gate. CPU/R0 GO503179 then passed six production-policy
+cases and the actual whole-job rehearsal: Python40856/birth639293167290764331,
+System32 conhost42188/birth639293167290927906, observed parent40856 and command
+`conhost.exe 0x4`. The console was born about16ms after the root. This separately
+observed reproduction does not recover the first run's missing host tuple.
+1001 replacements/40164 reads/zero errors and three reader/owner groups passed;
+job empty/released, named lease `3cf7d8e5e353482f9b8438a9333386a3` released.
+No game/hook/device/input/GPU/owner action. Evidence:
+`build/readback/rehearsal-go503179/{result,job-identities,root,reader}.json`.
+An isolated invocation of the production Census function also retained one
+identity then an exact empty array (not null): `build/readback/census-serialization/`.
+The runtime binary and its 26 passing force/private-state assertions are unchanged.
+Next: freeze fresh attempt-02, request one live GO, wait for preceding operator's
+FINAL release and measured fresh raw idle180s before invoking the controller.
+R1/R2 native startup/rendering remains unverified.
 No owner/installed write or public push. Existing adoption
 rows STD-001–010 remain unchecked; only touched STD-035 scope is marked partial.
 
