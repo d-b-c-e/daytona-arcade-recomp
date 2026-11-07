@@ -1,16 +1,43 @@
-# Agent notes
+# Daytona USA — agent guide
 
-## Toolkit standards
+Portfolio rules: `E:\Source\dbce-project-mgmt\HOW-WE-WORK.md` (read first; it replaces older process, lease, review and testing instructions). Current focus: `E:\Source\dbce-project-mgmt\NOW.md`. Feature status lives in the portfolio grid (`python E:\Source\dbce-project-mgmt\tools\portfolio_grid.py plan daytona`), not in this file. Grid id: `daytona`.
 
-At the start of every session, compare the wheel toolkit's ledger
-(`E:\Source\toolkits\dbce-wheel-mod-toolkit\STANDARDS.md`) with this repo's
-`TOOLKIT-ADOPTION.md`. Report any entry that is `pending`, `unchecked` or missing
-from the adoption file, and bring it in when your work touches that area. When you
-adopt one (or find it does not apply), update `TOOLKIT-ADOPTION.md` in the same
-commit. When you set a new family-wide standard, append it to the toolkit ledger
-and commit it in the same turn; do not leave it only in an uncommitted file.
+## Project
 
-Desktop routes (2026-11-03): follow the [route ladder](../../dbce-project-mgmt/skills/automated-testing/references/desktop-routes.md) and run `pwsh E:\Source\dbce-project-mgmt\tools\Test-DesktopRoutes.ps1`; if a route is down, continue on the next route within existing authorization and game safeguards.
+Static recompilation of Daytona USA (Sega Model 2): the i960 program and the TGP program are recompiled to C++, and the hardware (geometrizer, rasterizer, tilemaps, sound board) is native C++. MAME is only a test oracle. Remote `d-b-c-e/daytona-arcade-recomp` (visibility unconfirmed, so do not push). Project licence is undecided. No Sega code, ROM bytes or ROM-derived output in the repo; users supply `daytona93` (Deluxe '93) and/or `daytona` (Rev A) ROM sets.
+
+## Build
+
+`powershell -ExecutionPolicy Bypass -File setup.ps1` on Windows (Clang from VS Build Tools; `--msvc` for MSVC), `./setup.sh` elsewhere. It installs the toolchain, fetches pinned dependencies into `extern/`, builds and runs tests. ROMs go in `roms/daytona93.zip` and/or `roms/daytona.zip`. After changing the recompiler or seeds: `python3 scripts/recompile.py` (`--set daytona --build-dir build-daytona` for Rev A).
+
+## Test
+
+Setup runs the tests without a ROM set; ROM-dependent checks use MAME as the oracle (`--with-mame`, `--build-mame`). Settings, EEPROM and backup RAM are in the user data folder (`launcher.ini`); Rev A (`build-daytona`) has its own. Back them up and restore them around a run.
+
+## Install / run on the rig
+
+`build\Release\daytona.exe` (Visual Studio generator) or `build/daytona`; Rev A is `build-daytona/daytona`. Options: `--rom FILE.zip --autostart --gpu vulkan|direct3d12|metal --fullscreen`. Esc opens the launcher in game.
+
+## Shared code
+
+Toolkit adoption is tracked in `TOOLKIT-ADOPTION.md`. Change shared code in the toolkit and re-sync; never edit the vendored copy.
+
+## Project-specific rules
+
+The binding technical and legal rules are in `rules.md`; the essentials:
+- No Sega code or assets, no leaked source, and no ROM-derived files in git (generated C++, decompiled output, MAME traces).
+- Third-party components are recorded in `THIRD_PARTY.md` with upstream, commit and licence; check licence compatibility first.
+- Generated code is never hand-edited; fix the recompiler or add a seed.
+- FP results that can reach memory go through SoftFloat `extF80`; no `-ffast-math`; TGP results must match MAME bit for bit.
+- Enhancements stay off by default; with them off the game must match MAME.
+- Commits carry no assistant attribution (`rules.md`). `extern/` and build output are git-ignored.
+
+## Key docs
+
+- `README.md`, `docs/getting-started.md`
+- `docs/daytona-usa-recomp-design.md`, `rules.md`
+- `THIRD_PARTY.md`, `TOOLKIT-ADOPTION.md`
+
 
 <!-- BEGIN project-file-location -->
 ## Project files and temporary work
